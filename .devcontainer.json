@@ -1,0 +1,34 @@
+{
+    "name": "My Devcontaienr",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "workspaceFolder": "/app",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind,consistency=cached",
+    "runArgs": [
+        "--gpus",
+        "all"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": true
+                    }
+                },
+                "python.defaultInterpreterPath": "/opt/conda/bin/python"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.mypy-type-checker",
+                "oderwat.indent-rainbow",
+                "tamasfe.even-better-toml",
+                "ms-azuretools.vscode-docker",
+                "charliermarsh.ruff"
+            ]
+        }
+    }
+}

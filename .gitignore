@@ -15,6 +15,7 @@
 *.ods
 *.ods#
 *.json
+!.devcontainer.json
 build_docker.sh
 
 # Images / Videos
