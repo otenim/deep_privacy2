@@ -87,14 +87,8 @@ class FullyConnectedLayer(torch.nn.Module):
             bias_init=bias_init,
         )
         self.activation = activation
-        self.weight = torch.nn.Parameter(
-            torch.randn([out_features, in_features]) / lr_multiplier
-        )
-        self.bias = (
-            torch.nn.Parameter(torch.full([out_features], np.float32(bias_init)))
-            if bias
-            else None
-        )
+        self.weight = torch.nn.Parameter(torch.randn([out_features, in_features]) / lr_multiplier)
+        self.bias = torch.nn.Parameter(torch.full([out_features], np.float32(bias_init))) if bias else None
         self.weight_gain = lr_multiplier / np.sqrt(in_features)
         self.bias_gain = lr_multiplier
         self.in_features = in_features
@@ -162,14 +156,8 @@ class Conv2d(torch.nn.Module):
             persistent=False,
         )
         self.weight_gain = lr_multiplier / np.sqrt(in_channels * (kernel_size**2))
-        self.weight = torch.nn.Parameter(
-            torch.randn([out_channels, in_channels, kernel_size, kernel_size])
-        )
-        self.bias = (
-            torch.nn.Parameter(torch.zeros([out_channels]) + bias_init)
-            if bias
-            else None
-        )
+        self.weight = torch.nn.Parameter(torch.randn([out_channels, in_channels, kernel_size, kernel_size]))
+        self.bias = torch.nn.Parameter(torch.zeros([out_channels]) + bias_init) if bias else None
         self.bias_gain = lr_multiplier
         if w_dim is not None:
             self.affine = FullyConnectedLayer(w_dim, in_channels, bias_init=1)
@@ -206,10 +194,7 @@ class Conv2d(torch.nn.Module):
         x = F.conv2d(input=x, weight=w, padding=self.padding, bias=b)
 
         if self.training and self.use_noise:
-            noise = (
-                torch.randn([x.shape[0], 1, *self.resolution], device=x.device)
-                * self.noise_strength
-            )
+            noise = torch.randn([x.shape[0], 1, *self.resolution], device=x.device) * self.noise_strength
         elif self.use_noise:
             noise = self.noise_const * self.noise_strength
         if self.use_noise:
@@ -234,9 +219,7 @@ class SG2ResidualBlock(torch.nn.Module):
         self.out_channels = out_channels
 
         self.conv0 = Conv2d(in_channels, out_channels[0], **layer_kwargs)
-        self.conv1 = Conv2d(
-            out_channels[0], out_channels[1], **layer_kwargs, gain=skip_gain
-        )
+        self.conv1 = Conv2d(out_channels[0], out_channels[1], **layer_kwargs, gain=skip_gain)
         self.skip = Conv2d(
             in_channels,
             out_channels[1],
@@ -246,9 +229,7 @@ class SG2ResidualBlock(torch.nn.Module):
             activation="linear",
         )
         if layer_scale:
-            self.layer_scale = nn.Parameter(
-                torch.zeros((1, out_channels[1], 1, 1), dtype=torch.float32) + 1e-5
-            )
+            self.layer_scale = nn.Parameter(torch.zeros((1, out_channels[1], 1, 1), dtype=torch.float32) + 1e-5)
 
     def forward(self, x, w=None, **layer_kwargs):
         y = x
@@ -364,16 +345,14 @@ class Decoder(nn.Module):
             res_blocks = nn.ModuleList()
             unet_skips = nn.ModuleList()
             for i in range(num_resnet_blocks[-lidx - 1]):
-                resolution = [r//(2**(n_layers-1-lidx)) for r in imsize]
+                resolution = [r // (2 ** (n_layers - 1 - lidx)) for r in imsize]
                 is_first = i == 0
                 has_unet = is_first and lidx != 0
                 cur_dim = dim_in if is_first else dim_out
                 n = 2
                 n += int(has_unet)
                 gain = np.sqrt(1 / n)
-                block = dec_blk(
-                    cur_dim, [cur_dim, dim_out], skip_gain=gain, resolution=resolution
-                )
+                block = dec_blk(cur_dim, [cur_dim, dim_out], skip_gain=gain, resolution=resolution)
                 res_blocks.append(block)
                 if has_unet:
                     unet_block = Conv2d(
@@ -482,14 +461,7 @@ class TriaGAN(BaseStyleGAN):
 
         self.use_maskrcnn_mask = use_maskrcnn_mask
         self.encoder = Encoder(
-            dim,
-            dim_mults,
-            num_resnet_blocks,
-            w_dim,
-            norm_enc,
-            imsize=imsize,
-            layer_scale=layer_scale,
-            use_noise=False
+            dim, dim_mults, num_resnet_blocks, w_dim, norm_enc, imsize=imsize, layer_scale=layer_scale, use_noise=False
         )
         self.decoder = Decoder(
             dim,
@@ -504,13 +476,9 @@ class TriaGAN(BaseStyleGAN):
             layer_scale=layer_scale,
         )
 
-    def get_input(
-        self, condition, mask, maskrcnn_mask, keypoints, joint_map, **kwargs
-    ) -> torch.Tensor:
+    def get_input(self, condition, mask, maskrcnn_mask, keypoints, joint_map, **kwargs) -> torch.Tensor:
         if self.use_maskrcnn_mask:
-            x = torch.cat(
-                (condition, mask, 1 - mask, maskrcnn_mask, 1 - maskrcnn_mask), dim=1
-            )
+            x = torch.cat((condition, mask, 1 - mask, maskrcnn_mask, 1 - maskrcnn_mask), dim=1)
         else:
             x = torch.cat((condition, mask, 1 - mask), dim=1)
 
@@ -547,9 +515,7 @@ class TriaGAN(BaseStyleGAN):
 
         if w is None and s is None:
             w = self.style_net(z, keypoints=keypoints, update_emas=update_emas)
-        x = self.get_input(
-            condition, mask, maskrcnn_mask, keypoints, joint_map, **kwargs
-        )
+        x = self.get_input(condition, mask, maskrcnn_mask, keypoints, joint_map, **kwargs)
         x = self.from_rgb(x)
         x, unet_features = self.encoder(x, w, s=s)
 

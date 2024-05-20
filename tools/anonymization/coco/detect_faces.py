@@ -9,6 +9,7 @@ from detectron2.data.detection_utils import _apply_exif_orientation
 from PIL import Image
 from pycocotools.coco import COCO
 
+
 def annotate_coco(coco_path: Path, detector: DSFDDetector, target_path: Path):
     face_detection = dict()
     data = COCO(coco_path.joinpath("annotations", "person_keypoints_train2017.json"))
@@ -20,7 +21,7 @@ def annotate_coco(coco_path: Path, detector: DSFDDetector, target_path: Path):
             continue
         image_path = coco_path.joinpath("train2017", image_info["file_name"])
         im = Image.open(image_path)
-    
+
         im = _apply_exif_orientation(im)
         im = im.convert("RGB")
         im = np.array(im)
@@ -29,14 +30,8 @@ def annotate_coco(coco_path: Path, detector: DSFDDetector, target_path: Path):
     with open(target_path, "w") as fp:
         json.dump(face_detection, fp)
 
+
 if __name__ == "__main__":
-    detector = build_detector(
-        clip_boxes=True,
-        confidence_threshold=0.3
-        )
+    detector = build_detector(clip_boxes=True, confidence_threshold=0.3)
     coco_path = Path("/mnt/work2/haakohu/datasets/coco/")
-    annotate_coco(
-        coco_path,
-        detector,
-        coco_path.joinpath("initial_detected_boxes_train2017.json")
-    )
+    annotate_coco(coco_path, detector, coco_path.joinpath("initial_detected_boxes_train2017.json"))

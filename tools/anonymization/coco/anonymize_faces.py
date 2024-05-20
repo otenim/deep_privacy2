@@ -12,10 +12,8 @@ from tops.config import instantiate
 import tops
 from pycocotools.coco import COCO
 
-def iteratively_anonymize(
-        anonymizer,
-        target_directory: pathlib.Path,
-        synthesis_kwargs):
+
+def iteratively_anonymize(anonymizer, target_directory: pathlib.Path, synthesis_kwargs):
     target_directory.mkdir(exist_ok=True, parents=True)
     coco_path = pathlib.Path("/mnt/work2/haakohu/datasets/coco/")
     data = COCO(coco_path.joinpath("annotations", "person_keypoints_train2017.json"))
@@ -44,7 +42,7 @@ def iteratively_anonymize(
             keypoints.append(kp)
         keypoints = torch.from_numpy(np.stack(keypoints)).float()
         keypoints = keypoints[detections["keypoint_indices"]]
-        keypoints[:,:, 2] = keypoints[:, :, 2] > .5
+        keypoints[:, :, 2] = keypoints[:, :, 2] > 0.5
         keypoints = keypoints[:, :, :2]
         assert len(keypoints) == len(boxes), (len(boxes), len(keypoints))
         im = Image.open(image_path)
@@ -52,9 +50,7 @@ def iteratively_anonymize(
         orig_im_mode = im.mode
         im = im.convert("RGB")
         im = np.array(im)
-        detection = [
-            FaceDetection(boxes, target_imsize=(128, 128), fdf128_expand=True, keypoints=keypoints)
-        ]
+        detection = [FaceDetection(boxes, target_imsize=(128, 128), fdf128_expand=True, keypoints=keypoints)]
         im = torch.from_numpy(np.rollaxis(im, 2))
         im = anonymizer(im, **synthesis_kwargs, detections=detection)
         im = utils.im2numpy(im)
@@ -79,5 +75,6 @@ def main(config_path):
     anonymizer = instantiate(cfg.anonymizer, load_cache=True)
     synthesis_kwargs = dict(amp=False, multi_modal_truncation=False, truncation_value=0)
     iteratively_anonymize(anonymizer, target_dir, synthesis_kwargs)
+
 
 main()

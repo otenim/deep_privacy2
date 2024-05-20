@@ -21,9 +21,7 @@ generator = L(TriaGAN)(
     norm_dec=True,
     layer_scale=True,
     use_noise=True,
-    style_net=L(SG2StyleNet)(
-        z_dim="${generator.z_channels}", w_dim="${generator.w_dim}"
-    ),
+    style_net=L(SG2StyleNet)(z_dim="${generator.z_channels}", w_dim="${generator.w_dim}"),
 )
 
 

@@ -15,6 +15,11 @@ data.train.loader.update(
     read_condition=True,
     gpu_transform=L(torch.nn.Sequential)(
         L(ToFloat)(keys=["img", "mask", "maskrcnn_mask", "condition"], norm=False),
-        L(Normalize)(mean=[0.5*255, 0.5*255, 0.5*255], std=[0.5*255, 0.5*255, 0.5*255], inplace=True, keys=["img", "condition"]),
-    )
+        L(Normalize)(
+            mean=[0.5 * 255, 0.5 * 255, 0.5 * 255],
+            std=[0.5 * 255, 0.5 * 255, 0.5 * 255],
+            inplace=True,
+            keys=["img", "condition"],
+        ),
+    ),
 )

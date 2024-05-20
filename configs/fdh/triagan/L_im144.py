@@ -1,11 +1,9 @@
-from .L_im72 import (
-    G_optim, D_optim, loss_fnc, common, EMA, train,
-    generator, discriminator, ckpt_mapper
-)
+from .L_im72 import G_optim, D_optim, loss_fnc, common, EMA, train, generator, discriminator, ckpt_mapper
 from ...datasets.fdh_resampled_wds.fdh144 import data
+
 generator.update(
     dim=256,
-    dim_mults=[1, 2, 2, 2,2],
+    dim_mults=[1, 2, 2, 2, 2],
 )
 
 train.update(

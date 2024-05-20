@@ -28,7 +28,7 @@ class GeneratorIteratorWrapper(GenerativeModelModuleWrapper):
         self.cur_div_idx = 0 if self.cur_div_idx == self.n_diverse else self.cur_div_idx
         with torch.cuda.amp.autocast(enabled=tops.AMP()):
             img = self.module(**self.batch)["img"]
-            img = (utils.denormalize_img(img)*255).byte()
+            img = (utils.denormalize_img(img) * 255).byte()
             return img
 
 
@@ -39,7 +39,7 @@ def compute_fid(generator, dataloader, real_directory, n_source, zero_z, n_diver
     assert n_diverse >= 1
     assert (not zero_z) or n_diverse == 1
     assert num_samples % batch_size == 0
-    assert n_source <= batch_size * len(dataloader), (batch_size*len(dataloader), n_source, n_diverse)
+    assert n_source <= batch_size * len(dataloader), (batch_size * len(dataloader), n_source, n_diverse)
     metrics = torch_fidelity.calculate_metrics(
         input1=generator,
         input2=real_directory,
@@ -47,6 +47,6 @@ def compute_fid(generator, dataloader, real_directory, n_source, zero_z, n_diver
         fid=True,
         input2_cache_name="_".join(Path(real_directory).parts) + "_cached",
         input1_model_num_samples=int(num_samples),
-        batch_size=dataloader.batch_size
+        batch_size=dataloader.batch_size,
     )
     return metrics["frechet_inception_distance"]

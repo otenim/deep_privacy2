@@ -1,0 +1,14 @@
+[tool.black]
+line-length = 120
+
+[tool.isort]
+line_length = 120
+
+[tool.mypy]
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pylint]
+max-line-length = 120
+generated-members = ["torch.*", "numpy.*", "cv2.*"]
+disable = ["C0116", "E1102", "W0603", "C0114"]

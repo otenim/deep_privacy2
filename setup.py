@@ -1,6 +1,6 @@
 import torch
 import torchvision
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 torch_ver = [int(x) for x in torch.__version__.split(".")[:2]]
 assert torch_ver >= [1, 9], "Requires PyTorch >= 1.9"
@@ -41,6 +41,5 @@ setup(
         "imageio==2.4.1",
         "timm==0.6.7",
         "clip@git+https://github.com/openai/CLIP.git@b46f5ac7587d2e1862f8b7b1573179d80dcdd620",
-
     ],
 )

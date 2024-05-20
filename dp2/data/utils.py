@@ -110,11 +110,7 @@ def get_num_workers(num_workers: int):
 def collate_fn(batch):
     elem = batch[0]
     ignore_keys = set(["embed_map", "vertx2cat"])
-    batch_ = {
-        key: default_collate([d[key] for d in batch])
-        for key in elem
-        if key not in ignore_keys
-    }
+    batch_ = {key: default_collate([d[key] for d in batch]) for key in elem if key not in ignore_keys}
     if "embed_map" in elem:
         batch_["embed_map"] = elem["embed_map"]
     if "vertx2cat" in elem:

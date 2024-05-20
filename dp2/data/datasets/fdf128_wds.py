@@ -31,18 +31,18 @@ class BBoxToMask:
 
 
 def get_dataloader_fdf_wds(
-        path,
-        batch_size: int,
-        num_workers: int,
-        transform: torch.nn.Module,
-        gpu_transform: torch.nn.Module,
-        infinite: bool,
-        shuffle: bool,
-        partial_batches: bool,
-        sample_shuffle=10_000,
-        tar_shuffle=100,
-        channels_last=False,
-    ):
+    path,
+    batch_size: int,
+    num_workers: int,
+    transform: torch.nn.Module,
+    gpu_transform: torch.nn.Module,
+    infinite: bool,
+    shuffle: bool,
+    partial_batches: bool,
+    sample_shuffle=10_000,
+    tar_shuffle=100,
+    channels_last=False,
+):
     # Need to set this for split_by_node to work.
     os.environ["RANK"] = str(tops.rank())
     os.environ["WORLD_SIZE"] = str(tops.world_size())
@@ -52,10 +52,12 @@ def get_dataloader_fdf_wds(
         pipeline = [wds.SimpleShardList(str(path))]
     if shuffle:
         pipeline.append(wds.shuffle(tar_shuffle))
-    pipeline.extend([
-        wds.split_by_node,
-        wds.split_by_worker,
-    ])
+    pipeline.extend(
+        [
+            wds.split_by_node,
+            wds.split_by_worker,
+        ]
+    )
     if shuffle:
         pipeline.append(wds.shuffle(sample_shuffle))
 
@@ -64,22 +66,21 @@ def get_dataloader_fdf_wds(
         wds.handle_extension("keypoints.npy", kp_decoder),
     ]
 
-    rename_keys = [
-        ["img", "image.png"],
-        ["keypoints", "keypoints.npy"],
-        ["__key__", "__key__"],
-        ["mask", "mask"]
-    ]
+    rename_keys = [["img", "image.png"], ["keypoints", "keypoints.npy"], ["__key__", "__key__"], ["mask", "mask"]]
 
-    pipeline.extend([
-        wds.tarfile_to_samples(),
-        wds.decode(*decoder),
-    ])
+    pipeline.extend(
+        [
+            wds.tarfile_to_samples(),
+            wds.decode(*decoder),
+        ]
+    )
     pipeline.append(wds.map(BBoxToMask()))
-    pipeline.extend([
-        wds.batched(batch_size, collation_fn=collate_fn, partial=partial_batches),
-        wds.rename_keys(*rename_keys),
-    ])
+    pipeline.extend(
+        [
+            wds.batched(batch_size, collation_fn=collate_fn, partial=partial_batches),
+            wds.rename_keys(*rename_keys),
+        ]
+    )
 
     if transform is not None:
         pipeline.append(wds.map(transform))
@@ -88,7 +89,9 @@ def get_dataloader_fdf_wds(
         pipeline = pipeline.repeat(nepochs=1000000)
 
     loader = wds.WebLoader(
-        pipeline, batch_size=None, shuffle=False,
+        pipeline,
+        batch_size=None,
+        shuffle=False,
         num_workers=get_num_workers(num_workers),
         persistent_workers=True,
     )

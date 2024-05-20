@@ -21,35 +21,45 @@ data = dict(
     train=dict(
         dataset=L(FDF256Dataset)(dirpath=data_dir.joinpath("train"), transform=None, load_keypoints=False),
         loader=L(get_dataloader)(
-            shuffle=True, num_workers=3, drop_last=True, prefetch_factor=2,
+            shuffle=True,
+            num_workers=3,
+            drop_last=True,
+            prefetch_factor=2,
             batch_size="${train.batch_size}",
             dataset="${..dataset}",
             infinite=True,
-            gpu_transform=L(torch.nn.Sequential)(*[
-                L(ToFloat)(),
-                L(RandomHorizontalFlip)(p=0.5),
-                L(Resize)(size="${data.imsize}"),
-                L(Normalize)(mean=[.5, .5, .5], std=[.5, .5, .5], inplace=True),
-                L(CreateCondition)(),
-            ])
-        )
+            gpu_transform=L(torch.nn.Sequential)(
+                *[
+                    L(ToFloat)(),
+                    L(RandomHorizontalFlip)(p=0.5),
+                    L(Resize)(size="${data.imsize}"),
+                    L(Normalize)(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                    L(CreateCondition)(),
+                ]
+            ),
+        ),
     ),
     val=dict(
         dataset=L(FDF256Dataset)(dirpath=data_dir.joinpath("val"), transform=None, load_keypoints=False),
         loader=L(get_dataloader)(
-            shuffle=False, num_workers=3, drop_last=False, prefetch_factor=2,
+            shuffle=False,
+            num_workers=3,
+            drop_last=False,
+            prefetch_factor=2,
             batch_size="${train.batch_size}",
             dataset="${..dataset}",
             infinite=False,
-            gpu_transform=L(torch.nn.Sequential)(*[
-                L(ToFloat)(),
-                L(Resize)(size="${data.imsize}"),
-                L(Normalize)(mean=[.5, .5, .5], std=[.5, .5, .5], inplace=True),
-                L(CreateCondition)(),
-            ])
-        )
+            gpu_transform=L(torch.nn.Sequential)(
+                *[
+                    L(ToFloat)(),
+                    L(Resize)(size="${data.imsize}"),
+                    L(Normalize)(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], inplace=True),
+                    L(CreateCondition)(),
+                ]
+            ),
+        ),
     ),
     # Training evaluation might do optimizations to reduce compute overhead. E.g. compute with AMP.
     train_evaluation_fn=functools.partial(train_eval_fn, cache_directory=Path(metrics_cache, "fdf_val_train")),
-    evaluation_fn=functools.partial(final_eval_fn, cache_directory=Path(metrics_cache, "fdf_val"))
+    evaluation_fn=functools.partial(final_eval_fn, cache_directory=Path(metrics_cache, "fdf_val")),
 )

@@ -1,4 +1,3 @@
-
 import torch
 import tops
 import numpy as np
@@ -25,7 +24,9 @@ class LatentHistogramMatchAnonymizer(Anonymizer):
         n_sampling_steps: int = 1,
         all_styles=None,
     ):
-        batch["img"] = F.normalize(batch["img"].float(), [0.5*255, 0.5*255, 0.5*255], [0.5*255, 0.5*255, 0.5*255])
+        batch["img"] = F.normalize(
+            batch["img"].float(), [0.5 * 255, 0.5 * 255, 0.5 * 255], [0.5 * 255, 0.5 * 255, 0.5 * 255]
+        )
         batch["condition"] = batch["mask"].float() * batch["img"]
 
         assert z_idx is None and all_styles is None, "Arguments not supported with n_sampling_steps > 1."
@@ -34,11 +35,13 @@ class LatentHistogramMatchAnonymizer(Anonymizer):
         indices = [1, 2]
         hist_kwargs = dict(
             bins=torch.linspace(0, 1, 256, dtype=torch.float32, device=tops.get_device()),
-            bandwidth=torch.tensor(1., device=tops.get_device()))
+            bandwidth=torch.tensor(1.0, device=tops.get_device()),
+        )
         real_hist = [histogram(real_hls[:, i].flatten(start_dim=1), **hist_kwargs) for i in indices]
         if multi_modal_truncation:
             w = G.style_net.multi_modal_truncate(
-                truncation_value=truncation_value, n=batch["condition"].shape[0]).detach()
+                truncation_value=truncation_value, n=batch["condition"].shape[0]
+            ).detach()
         else:
             w = G.style_net.get_truncated(truncation_value, n=batch["condition"].shape[0]).detach()
         assert z_idx is None and all_styles is None, "Arguments not supported with n_sampling_steps > 1."
@@ -48,7 +51,7 @@ class LatentHistogramMatchAnonymizer(Anonymizer):
             with torch.set_grad_enabled(True):
                 with torch.cuda.amp.autocast(amp):
                     anonymized_im = G(**batch, truncation_value=None, w=w)["img"]
-                fake_hls = rgb_to_hsv(anonymized_im*0.5 + 0.5)
+                fake_hls = rgb_to_hsv(anonymized_im * 0.5 + 0.5)
                 fake_hls[:, 0] /= 2 * torch.pi
                 fake_hist = [histogram(fake_hls[:, i].flatten(start_dim=1), **hist_kwargs) for i in indices]
                 dist = sum([utils.torch_wasserstein_loss(r, f) for r, f in zip(real_hist, fake_hist)])
@@ -60,7 +63,7 @@ class LatentHistogramMatchAnonymizer(Anonymizer):
                 optim.zero_grad()
                 if dist < 0.02:
                     break
-        anonymized_im = (anonymized_im+1).div(2).clamp(0, 1).mul(255)
+        anonymized_im = (anonymized_im + 1).div(2).clamp(0, 1).mul(255)
         return anonymized_im
 
 
@@ -83,5 +86,5 @@ class HistogramMatchAnonymizer(Anonymizer):
 
         gaussian_mask = gaussian_blur2d(gaussian_mask[None], kernel_size=[19, 19], sigma=[10, 10])[0]
         gaussian_mask = gaussian_mask / gaussian_mask.max()
-        anonymized_im = gaussian_mask * equalized_gim + (1-gaussian_mask) * anonymized_im
+        anonymized_im = gaussian_mask * equalized_gim + (1 - gaussian_mask) * anonymized_im
         return anonymized_im

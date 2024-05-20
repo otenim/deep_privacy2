@@ -18,5 +18,5 @@ generator = L(StyleGANUnet)(
     n_keypoints="${data.n_keypoints}",
     input_keypoints=False,
     input_keypoint_indices=[],
-    fix_errors=True
+    fix_errors=True,
 )

@@ -30,12 +30,9 @@ def final_eval_fn(*args, **kwargs):
 def get_cache_directory(imsize, subset):
     return Path(metrics_cache, f"{subset}{imsize[0]}")
 
-dataset_base_dir = (
-    os.environ["BASE_DATASET_DIR"] if "BASE_DATASET_DIR" in os.environ else "data"
-)
-metrics_cache = (
-    os.environ["FBA_METRICS_CACHE"] if "FBA_METRICS_CACHE" in os.environ else ".cache"
-)
+
+dataset_base_dir = os.environ["BASE_DATASET_DIR"] if "BASE_DATASET_DIR" in os.environ else "data"
+metrics_cache = os.environ["FBA_METRICS_CACHE"] if "FBA_METRICS_CACHE" in os.environ else ".cache"
 data_dir = Path(dataset_base_dir, "fdf_resampled")
 data = dict(
     imsize=(128, 128),
@@ -52,7 +49,9 @@ data = dict(
             ),
             gpu_transform=L(torch.nn.Sequential)(
                 L(ToFloat)(norm=False, keys=["img", "mask"]),
-                L(Normalize)(mean=[0.5*255, 0.5*255, 0.5*255], std=[0.5*255, 0.5*255, 0.5*255], inplace=True),
+                L(Normalize)(
+                    mean=[0.5 * 255, 0.5 * 255, 0.5 * 255], std=[0.5 * 255, 0.5 * 255, 0.5 * 255], inplace=True
+                ),
                 L(CreateCondition)(),
             ),
             infinite=True,
@@ -74,9 +73,11 @@ data = dict(
     ),
     # Training evaluation might do optimizations to reduce compute overhead. E.g. compute with AMP.
     train_evaluation_fn=L(functools.partial)(
-        train_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdf"),
-        data_len=50_000),
+        train_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdf"), data_len=50_000
+    ),
     evaluation_fn=L(functools.partial)(
-        final_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdf_eval"), 
-        data_len=50_000)
+        final_eval_fn,
+        cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdf_eval"),
+        data_len=50_000,
+    ),
 )

@@ -16,24 +16,24 @@ def get_chsize(imsize, cnum, max_imsize, max_cnum_mul):
 
 class StyleGANUnet(BaseStyleGAN):
     def __init__(
-            self,
-            scale_grad: bool,
-            im_channels: int,
-            min_fmap_resolution: int,
-            imsize: List[int],
-            cnum: int,
-            max_cnum_mul: int,
-            mask_output: bool,
-            conv_clamp: int,
-            input_cse: bool,
-            cse_nc: int,
-            n_middle_blocks: int,
-            input_keypoints: bool,
-            n_keypoints: int,
-            input_keypoint_indices: Tuple[int],
-            fix_errors: bool,
-            **kwargs
-        ) -> None:
+        self,
+        scale_grad: bool,
+        im_channels: int,
+        min_fmap_resolution: int,
+        imsize: List[int],
+        cnum: int,
+        max_cnum_mul: int,
+        mask_output: bool,
+        conv_clamp: int,
+        input_cse: bool,
+        cse_nc: int,
+        n_middle_blocks: int,
+        input_keypoints: bool,
+        n_keypoints: int,
+        input_keypoint_indices: Tuple[int],
+        fix_errors: bool,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self.n_keypoints = n_keypoints
         self.input_keypoint_indices = list(input_keypoint_indices)
@@ -47,18 +47,17 @@ class StyleGANUnet(BaseStyleGAN):
         self._image_channels = im_channels
         self._max_imsize = max(imsize)
         self.input_cse = input_cse
-        self.gain_unet = np.sqrt(1/3)
-        n_levels = int(np.log2(self._max_imsize) - np.log2(min_fmap_resolution))+1
+        self.gain_unet = np.sqrt(1 / 3)
+        n_levels = int(np.log2(self._max_imsize) - np.log2(min_fmap_resolution)) + 1
         encoder_layers = []
         self.from_rgb = Conv2d(
-            im_channels + 1 + input_cse*(cse_nc+1) + input_keypoints*len(self.input_keypoint_indices),
-            cnum, 1
+            im_channels + 1 + input_cse * (cse_nc + 1) + input_keypoints * len(self.input_keypoint_indices), cnum, 1
         )
         for i in range(n_levels):  # Encoder layers
-            resolution = [x//2**i for x in imsize]
+            resolution = [x // 2**i for x in imsize]
             in_ch = get_chsize(max(resolution), cnum, self._max_imsize, max_cnum_mul)
             second_ch = in_ch
-            out_ch = get_chsize(max(resolution)//2, cnum, self._max_imsize, max_cnum_mul)
+            out_ch = get_chsize(max(resolution) // 2, cnum, self._max_imsize, max_cnum_mul)
             down = 2
 
             if i == 0:  # first (lowest) block. Downsampling is performed at the start of the block
@@ -67,17 +66,15 @@ class StyleGANUnet(BaseStyleGAN):
                 out_ch = second_ch
             block = ResidualBlock(in_ch, out_ch, down=down, conv_clamp=conv_clamp, fix_residual=fix_errors)
             encoder_layers.append(block)
-        self._encoder_out_shape = [
-            get_chsize(min_fmap_resolution, cnum, self._max_imsize, max_cnum_mul),
-            *resolution]
+        self._encoder_out_shape = [get_chsize(min_fmap_resolution, cnum, self._max_imsize, max_cnum_mul), *resolution]
 
         self.encoder = torch.nn.ModuleList(encoder_layers)
 
         # initialize decoder
         decoder_layers = []
         for i in range(n_levels):
-            resolution = [x//2**(n_levels-1-i) for x in imsize]
-            in_ch = get_chsize(max(resolution)//2, cnum, self._max_imsize, max_cnum_mul)
+            resolution = [x // 2 ** (n_levels - 1 - i) for x in imsize]
+            in_ch = get_chsize(max(resolution) // 2, cnum, self._max_imsize, max_cnum_mul)
             out_ch = get_chsize(max(resolution), cnum, self._max_imsize, max_cnum_mul)
             if i == 0:  # first (lowest) block
                 in_ch = get_chsize(max(resolution), cnum, self._max_imsize, max_cnum_mul)
@@ -86,15 +83,25 @@ class StyleGANUnet(BaseStyleGAN):
             if i != n_levels - 1:
                 up = 2
             block = ResidualBlock(
-                in_ch, out_ch, conv_clamp=conv_clamp, gain_out=np.sqrt(1/3),
-                w_dim=self.style_net.w_dim, norm=True, up=up,
-                fix_residual=fix_errors
+                in_ch,
+                out_ch,
+                conv_clamp=conv_clamp,
+                gain_out=np.sqrt(1 / 3),
+                w_dim=self.style_net.w_dim,
+                norm=True,
+                up=up,
+                fix_residual=fix_errors,
             )
             decoder_layers.append(block)
             if i != 0:
                 unet_block = Conv2d(
-                    in_ch, in_ch, kernel_size=1, conv_clamp=conv_clamp, norm=True,
-                    gain=np.sqrt(1/3) if fix_errors else np.sqrt(.5))
+                    in_ch,
+                    in_ch,
+                    kernel_size=1,
+                    conv_clamp=conv_clamp,
+                    norm=True,
+                    gain=np.sqrt(1 / 3) if fix_errors else np.sqrt(0.5),
+                )
                 setattr(self, f"unet_block{i}", unet_block)
 
         # Initialize "middle blocks" that do not have down/up sample
@@ -102,8 +109,12 @@ class StyleGANUnet(BaseStyleGAN):
         for i in range(n_middle_blocks):
             ch = get_chsize(min_fmap_resolution, cnum, self._max_imsize, max_cnum_mul)
             block = ResidualBlock(
-                ch, ch, conv_clamp=conv_clamp, gain_out=np.sqrt(.5) if fix_errors else np.sqrt(1/3),
-                w_dim=self.style_net.w_dim, norm=True,
+                ch,
+                ch,
+                conv_clamp=conv_clamp,
+                gain_out=np.sqrt(0.5) if fix_errors else np.sqrt(1 / 3),
+                w_dim=self.style_net.w_dim,
+                norm=True,
             )
             middle_blocks.append(block)
         if n_middle_blocks != 0:
@@ -126,7 +137,7 @@ class StyleGANUnet(BaseStyleGAN):
             x = mask_output(True, condition, x, mask)
         return dict(img=x)
 
-    def forward_enc(self, condition, mask, embedding,  keypoints, E_mask, **kwargs):
+    def forward_enc(self, condition, mask, embedding, keypoints, E_mask, **kwargs):
         if self.input_cse:
             x = torch.cat((condition, mask, embedding, E_mask), dim=1)
         else:
@@ -140,7 +151,7 @@ class StyleGANUnet(BaseStyleGAN):
         unet_features = []
         for i, layer in enumerate(self.encoder):
             x = layer(x)
-            if i != len(self.encoder)-1:
+            if i != len(self.encoder) - 1:
                 unet_features.append(x)
         if hasattr(self, "middle_blocks"):
             for layer in self.middle_blocks:
@@ -148,13 +159,20 @@ class StyleGANUnet(BaseStyleGAN):
         return x, unet_features
 
     def forward(
-            self, condition, mask,
-            z=None, embedding=None, w=None, update_emas=False, x=None,
-            s=None,
-            keypoints=None,
-            unet_features=None,
-            E_mask=None,
-            **kwargs):
+        self,
+        condition,
+        mask,
+        z=None,
+        embedding=None,
+        w=None,
+        update_emas=False,
+        x=None,
+        s=None,
+        keypoints=None,
+        unet_features=None,
+        E_mask=None,
+        **kwargs,
+    ):
         # Used to skip sampling from encoder in inference. E.g. for w projection.
         if x is not None and unet_features is not None:
             assert not self.training
@@ -182,12 +200,13 @@ class ComodStyleUNet(StyleGANUnet):
         if n_down == 0:
             comod_layers = [Conv2d(in_ch, 256, kernel_size=3)]
         comod_layers.append(torch.nn.Flatten())
-        out_res = [x//2**n_down for x in self._encoder_out_shape[1:]]
+        out_res = [x // 2**n_down for x in self._encoder_out_shape[1:]]
         in_ch_fc = np.prod(out_res) * 256
         comod_layers.append(FullyConnectedLayer(in_ch_fc, 512, lr_multiplier=lr_multiplier_comod))
         self.comod_block = Sequential(*comod_layers)
         self.comod_fc = FullyConnectedLayer(
-            512+self.style_net.w_dim, self.style_net.w_dim, lr_multiplier=lr_multiplier_comod)
+            512 + self.style_net.w_dim, self.style_net.w_dim, lr_multiplier=lr_multiplier_comod
+        )
 
     def forward_dec(self, x, w, unet_features, condition, mask, **kwargs):
         y = self.comod_block(x)
@@ -196,7 +215,7 @@ class ComodStyleUNet(StyleGANUnet):
         for i, layer in enumerate(self.decoder):
             if i != 0:
                 unet_layer = getattr(self, f"unet_block{i}")
-                x = x + unet_layer(unet_features[-i], gain=np.sqrt(.5))
+                x = x + unet_layer(unet_features[-i], gain=np.sqrt(0.5))
             x = layer(x, w=y)
         x = self.to_rgb(x)
         if self.mask_output:

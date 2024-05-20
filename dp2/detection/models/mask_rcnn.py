@@ -12,18 +12,17 @@ from torchvision.transforms.functional import resize
 
 model_urls = {
     "COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml": "https://dl.fbaipublicfiles.com/detectron2/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x/139653917/model_final_2d9806.pkl",
-
 }
 
 
 class MaskRCNNDetector:
 
     def __init__(
-            self,
-            cfg_name: str = "COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml",
-            score_thres: float = 0.9,
-            class_filter=["person"],  # ["car", "bicycle","truck", "bus",  "backpack"]
-            fp16_inference: bool = False
+        self,
+        cfg_name: str = "COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml",
+        score_thres: float = 0.9,
+        class_filter=["person"],  # ["car", "bicycle","truck", "bus",  "backpack"]
+        fp16_inference: bool = False,
     ) -> None:
         cfg = model_zoo.get_config(cfg_name)
         cfg.MODEL.DEVICE = str(tops.get_device())
@@ -47,9 +46,9 @@ class MaskRCNNDetector:
     def resize_im(self, im):
         H, W = im.shape[1:]
         newH, newW = ResizeShortestEdge.get_output_shape(
-            H, W, self.cfg.INPUT.MIN_SIZE_TEST, self.cfg.INPUT.MAX_SIZE_TEST)
-        return resize(
-            im, (newH, newW), antialias=True)
+            H, W, self.cfg.INPUT.MIN_SIZE_TEST, self.cfg.INPUT.MAX_SIZE_TEST
+        )
+        return resize(im, (newH, newW), antialias=True)
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor):
@@ -74,5 +73,5 @@ class MaskRCNNDetector:
             "scores": output.get("scores")[idx2keep],
             "segmentation": segmentation,
             "classes": output.get("pred_classes")[idx2keep],
-            "is_person": is_person
+            "is_person": is_person,
         }

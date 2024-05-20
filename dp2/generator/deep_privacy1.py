@@ -25,16 +25,26 @@ def get_padding(kernel_size: int, dilation: int, stride: int):
 
 class Conv2d(nn.Conv2d):
 
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=None, dilation=1, groups=1,
-                 bias=True, padding_mode='zeros',
-                 demodulation=False, wsconv=False, gain=1,
-                 *args, **kwargs):
+    def __init__(
+        self,
+        in_channels,
+        out_channels,
+        kernel_size,
+        stride=1,
+        padding=None,
+        dilation=1,
+        groups=1,
+        bias=True,
+        padding_mode="zeros",
+        demodulation=False,
+        wsconv=False,
+        gain=1,
+        *args,
+        **kwargs,
+    ):
         if padding is None:
             padding = get_padding(kernel_size, dilation, stride)
-        super().__init__(
-            in_channels, out_channels, kernel_size, stride, padding, dilation,
-            groups, bias, padding_mode)
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias, padding_mode)
         self.demodulation = demodulation
         self.wsconv = wsconv
         if self.wsconv:
@@ -43,8 +53,9 @@ class Conv2d(nn.Conv2d):
             nn.init.normal_(self.weight)
         if bias:
             nn.init.constant_(self.bias, val=0)
-        assert not self.padding_mode == "circular",\
-            "conv2d_forward does not support circular padding. Look at original pytorch code"
+        assert (
+            not self.padding_mode == "circular"
+        ), "conv2d_forward does not support circular padding. Look at original pytorch code"
 
     def _get_weight(self):
         weight = self.weight
@@ -59,8 +70,7 @@ class Conv2d(nn.Conv2d):
         bias_ = None
         if bias:
             bias_ = self.bias
-        return nn.functional.conv2d(x, weight, bias_, self.stride,
-                                    self.padding, self.dilation, self.groups)
+        return nn.functional.conv2d(x, weight, bias_, self.stride, self.padding, self.dilation, self.groups)
 
     def forward(self, _inp):
         x, mask = _inp
@@ -68,12 +78,14 @@ class Conv2d(nn.Conv2d):
         return self.conv2d_forward(x, weight), mask
 
     def __repr__(self):
-        return ", ".join([
-            super().__repr__(),
-            f"Demodulation={self.demodulation}",
-            f"Weight Scale={self.wsconv}",
-            f"Bias={self.bias is not None}"
-        ])
+        return ", ".join(
+            [
+                super().__repr__(),
+                f"Demodulation={self.demodulation}",
+                f"Weight Scale={self.wsconv}",
+                f"Bias={self.bias is not None}",
+            ]
+        )
 
 
 class LeakyReLU(nn.LeakyReLU):
@@ -98,8 +110,7 @@ def up(x):
     if x.shape[0] == 1 and x.shape[2] == 1 and x.shape[3] == 1:
         # Analytical normalization
         return x
-    return nn.functional.interpolate(
-        x, scale_factor=2, mode="nearest")
+    return nn.functional.interpolate(x, scale_factor=2, mode="nearest")
 
 
 class NearestUpsample(nn.Module):
@@ -155,8 +166,7 @@ class OneHotPoseConcat(nn.Module):
 
 
 def transition_features(x_old, x_new, transition_variable):
-    assert x_old.shape == x_new.shape,\
-        "Old shape: {}, New: {}".format(x_old.shape, x_new.shape)
+    assert x_old.shape == x_new.shape, "Old shape: {}, New: {}".format(x_old.shape, x_new.shape)
     return torch.lerp(x_old.float(), x_new.float(), transition_variable)
 
 
@@ -164,10 +174,8 @@ class TransitionBlock(nn.Module):
 
     def forward(self, _inp):
         x, mask, batch = _inp
-        x = transition_features(
-            batch["x_old"], x, batch["transition_value"])
-        mask = transition_features(
-            batch["mask_old"], mask, batch["transition_value"])
+        x = transition_features(batch["x_old"], x, batch["transition_value"])
+        mask = transition_features(batch["mask_old"], mask, batch["transition_value"])
         del batch["x_old"]
         del batch["mask_old"]
         return x, mask, batch
@@ -175,9 +183,9 @@ class TransitionBlock(nn.Module):
 
 class UnetSkipConnection(nn.Module):
 
-    def __init__(self, conv2d_config: dict, in_channels: int,
-                 out_channels: int, resolution: int,
-                 residual: bool, enabled: bool):
+    def __init__(
+        self, conv2d_config: dict, in_channels: int, out_channels: int, resolution: int, residual: bool, enabled: bool
+    ):
         super().__init__()
         self.use_iconv = conv2d_config.conv.type == "iconv"
         self._in_channels = in_channels
@@ -186,17 +194,15 @@ class UnetSkipConnection(nn.Module):
         self._enabled = enabled
         self._residual = residual
         if self.use_iconv:
-            self.beta0 = torch.nn.Parameter(torch.tensor(1.))
-            self.beta1 = torch.nn.Parameter(torch.tensor(1.))
+            self.beta0 = torch.nn.Parameter(torch.tensor(1.0))
+            self.beta1 = torch.nn.Parameter(torch.tensor(1.0))
         else:
             if self._residual:
                 self.conv = build_base_conv(
-                    conv2d_config, False, in_channels // 2,
-                    out_channels, kernel_size=1, padding=0)
+                    conv2d_config, False, in_channels // 2, out_channels, kernel_size=1, padding=0
+                )
             else:
-                self.conv = ConvAct(
-                    conv2d_config, in_channels, out_channels,
-                    kernel_size=1, padding=0)
+                self.conv = ConvAct(conv2d_config, in_channels, out_channels, kernel_size=1, padding=0)
 
     def forward(self, _inp):
         if not self._enabled:
@@ -222,21 +228,19 @@ class UnetSkipConnection(nn.Module):
         return x, mask, batch
 
     def __repr__(self):
-        return " ".join([
-            self.__class__.__name__,
-            f"In channels={self._in_channels}",
-            f"Out channels={self._out_channels}",
-            f"Residual: {self._residual}",
-            f"Enabled: {self._enabled}"
-            f"IConv: {self.use_iconv}"
-        ])
+        return " ".join(
+            [
+                self.__class__.__name__,
+                f"In channels={self._in_channels}",
+                f"Out channels={self._out_channels}",
+                f"Residual: {self._residual}",
+                f"Enabled: {self._enabled}" f"IConv: {self.use_iconv}",
+            ]
+        )
 
 
 def get_conv(ctype, post_act):
-    type2conv = {
-        "conv": Conv2d,
-        "gconv": GatedConv
-    }
+    type2conv = {"conv": Conv2d, "gconv": GatedConv}
     # Do not apply for output layer
     if not post_act and ctype in ["gconv", "iconv"]:
         return type2conv["conv"]
@@ -244,8 +248,7 @@ def get_conv(ctype, post_act):
     return type2conv[ctype]
 
 
-def build_base_conv(
-        conv2d_config, post_act: bool, *args, **kwargs) -> nn.Conv2d:
+def build_base_conv(conv2d_config, post_act: bool, *args, **kwargs) -> nn.Conv2d:
     for k, v in conv2d_config.conv.items():
         assert k not in kwargs
         kwargs[k] = v
@@ -303,8 +306,8 @@ class GatedConv(Conv2d):
 
     def conv2d_forward(self, x, weight, bias=True):
         x_ = super().conv2d_forward(x, weight, bias)
-        x = x_[:, :self.out_channels // 2]
-        y = x_[:, self.out_channels // 2:]
+        x = x_[:, : self.out_channels // 2]
+        y = x_[:, self.out_channels // 2 :]
         x = self.lrelu(x)
         y = y.sigmoid()
         assert x.shape == y.shape, f"{x.shape}, {y.shape}"
@@ -313,9 +316,7 @@ class GatedConv(Conv2d):
 
 class BasicBlock(nn.Module):
 
-    def __init__(
-            self, conv2d_config, resolution: int, in_channels: int,
-            out_channels: List[int], residual: bool):
+    def __init__(self, conv2d_config, resolution: int, in_channels: int, out_channels: List[int], residual: bool):
         super().__init__()
         assert len(out_channels) == 2
         self._resolution = resolution
@@ -324,18 +325,20 @@ class BasicBlock(nn.Module):
         _layers = []
         _in_channels = in_channels
         for out_ch in out_channels:
-            conv = build_base_conv(
-                conv2d_config, True, _in_channels, out_ch, kernel_size=3,
-                resolution=resolution)
+            conv = build_base_conv(conv2d_config, True, _in_channels, out_ch, kernel_size=3, resolution=resolution)
             _layers.append(conv)
             _layers.extend(build_post_activation(_in_channels, conv2d_config))
             _in_channels = out_ch
         self.layers = nn.Sequential(*_layers)
         if self._residual:
             self.residual_conv = build_base_conv(
-                conv2d_config, post_act=False, in_channels=in_channels,
+                conv2d_config,
+                post_act=False,
+                in_channels=in_channels,
                 out_channels=out_channels[-1],
-                kernel_size=1, padding=0)
+                kernel_size=1,
+                padding=0,
+            )
             self.const = 1 / np.sqrt(2)
 
     def forward(self, _inp):
@@ -363,8 +366,7 @@ class PoseNormalize(nn.Module):
 
 class ScalarPoseFCNN(nn.Module):
 
-    def __init__(self, pose_size, hidden_size,
-                 output_shape):
+    def __init__(self, pose_size, hidden_size, output_shape):
         super().__init__()
         pose_size = pose_size
         self._hidden_size = hidden_size
@@ -373,9 +375,9 @@ class ScalarPoseFCNN(nn.Module):
         self.pose_preprocessor = nn.Sequential(
             PoseNormalize(),
             Linear(pose_size, hidden_size),
-            nn.LeakyReLU(.2),
+            nn.LeakyReLU(0.2),
             Linear(hidden_size, output_size),
-            nn.LeakyReLU(.2)
+            nn.LeakyReLU(0.2),
         )
 
     def forward(self, _inp):
@@ -391,11 +393,9 @@ class ScalarPoseFCNN(nn.Module):
         return x, mask, batch
 
     def __repr__(self):
-        return " ".join([
-            self.__class__.__name__,
-            f"hidden_size={self._hidden_size}",
-            f"output shape={self.output_shape}"
-        ])
+        return " ".join(
+            [self.__class__.__name__, f"hidden_size={self._hidden_size}", f"output shape={self.output_shape}"]
+        )
 
 
 class Attention(nn.Module):
@@ -404,20 +404,12 @@ class Attention(nn.Module):
         super(Attention, self).__init__()
         # Channel multiplier
         self.in_channels = in_channels
-        self.theta = Conv2d(
-            self.in_channels, self.in_channels // 8, kernel_size=1, padding=0,
-            bias=False)
-        self.phi = Conv2d(
-            self.in_channels, self.in_channels // 8, kernel_size=1, padding=0,
-            bias=False)
-        self.g = Conv2d(
-            self.in_channels, self.in_channels // 2, kernel_size=1, padding=0,
-            bias=False)
-        self.o = Conv2d(
-            self.in_channels // 2, self.in_channels, kernel_size=1, padding=0,
-            bias=False)
+        self.theta = Conv2d(self.in_channels, self.in_channels // 8, kernel_size=1, padding=0, bias=False)
+        self.phi = Conv2d(self.in_channels, self.in_channels // 8, kernel_size=1, padding=0, bias=False)
+        self.g = Conv2d(self.in_channels, self.in_channels // 2, kernel_size=1, padding=0, bias=False)
+        self.o = Conv2d(self.in_channels // 2, self.in_channels, kernel_size=1, padding=0, bias=False)
         # Learnable gain parameter
-        self.gamma = nn.Parameter(torch.tensor(0.), requires_grad=True)
+        self.gamma = nn.Parameter(torch.tensor(0.0), requires_grad=True)
 
     def forward(self, _inp):
         x, mask, batch = _inp
@@ -433,8 +425,9 @@ class Attention(nn.Module):
         beta = nn.functional.softmax(torch.bmm(theta.transpose(1, 2), phi), -1)
         # Attention map times g path
 
-        o = self.o((torch.bmm(g, beta.transpose(1, 2)).view(-1,
-                                                            self.in_channels // 2, x.shape[2], x.shape[3]), None))[0]
+        o = self.o((torch.bmm(g, beta.transpose(1, 2)).view(-1, self.in_channels // 2, x.shape[2], x.shape[3]), None))[
+            0
+        ]
         return self.gamma * o + x, mask, batch
 
 
@@ -455,10 +448,10 @@ class MSGGenerator(BaseGenerator):
             8: model_size,
             16: model_size,
             32: model_size,
-            64: model_size//2,
-            128: model_size//4,
-            256: model_size//8,
-            512: model_size//16
+            64: model_size // 2,
+            128: model_size // 4,
+            256: model_size // 8,
+            512: model_size // 16,
         }
         self.removable_hooks = []
         self.rgb_convolutions = nn.ModuleDict()
@@ -474,13 +467,13 @@ class MSGGenerator(BaseGenerator):
 
         self.conv2d_config = EasyDict(
             pixel_normalization=True,
-            leaky_relu_nslope=.2,
+            leaky_relu_nslope=0.2,
             normalization="pixel_wise",
             conv=dict(
                 type="conv",
                 wsconv=True,
                 gain=1,
-            )
+            ),
         )
         self._init_decoder()
         self._init_encoder()
@@ -490,25 +483,22 @@ class MSGGenerator(BaseGenerator):
         imsize = self.max_imsize
         self.from_rgb = build_convact(
             self.conv2d_config,
-            in_channels=self._image_channels + self.concat_input_mask*2,
+            in_channels=self._image_channels + self.concat_input_mask * 2,
             out_channels=self.res2channels[imsize],
-            kernel_size=1)
+            kernel_size=1,
+        )
         while imsize >= self._min_fmap_resolution:
             current_size = self.res2channels[imsize]
-            next_size = self.res2channels[max(imsize//2, self._min_fmap_resolution)]
-            block = BasicBlock(
-                self.conv2d_config, imsize, current_size,
-                [current_size, next_size], self._residual)
+            next_size = self.res2channels[max(imsize // 2, self._min_fmap_resolution)]
+            block = BasicBlock(self.conv2d_config, imsize, current_size, [current_size, next_size], self._residual)
             self.encoder.add_module(f"basic_block{imsize}", block)
             if imsize != self._min_fmap_resolution:
-                self.encoder.add_module(
-                    f"downsample{imsize}", AvgPool2d(2))
+                self.encoder.add_module(f"downsample{imsize}", AvgPool2d(2))
             imsize //= 2
 
     def _init_decoder(self):
         self.decoder = nn.ModuleList()
-        self.decoder.add_module(
-            "latent_concat", LatentVariableConcat(self.conv2d_config))
+        self.decoder.add_module("latent_concat", LatentVariableConcat(self.conv2d_config))
         if self._pose_size > 0:
             m = self._min_fmap_resolution
             pose_shape = (16, m, m)
@@ -517,7 +507,7 @@ class MSGGenerator(BaseGenerator):
         imsize = self._min_fmap_resolution
         self.rgb_convolutions = nn.ModuleDict()
         while imsize <= self.max_imsize:
-            current_size = self.res2channels[max(imsize//2, self._min_fmap_resolution)]
+            current_size = self.res2channels[max(imsize // 2, self._min_fmap_resolution)]
             start_size = current_size
             if imsize == self._min_fmap_resolution:
                 start_size += 32
@@ -525,19 +515,15 @@ class MSGGenerator(BaseGenerator):
                     start_size += 16
             else:
                 self.decoder.add_module(f"upsample{imsize}", NearestUpsample())
-                skip = UnetSkipConnection(
-                    self.conv2d_config, current_size*2, current_size, imsize,
-                    **self._unet_cfg)
+                skip = UnetSkipConnection(self.conv2d_config, current_size * 2, current_size, imsize, **self._unet_cfg)
                 self.decoder.add_module(f"skip_connection{imsize}", skip)
             next_size = self.res2channels[imsize]
-            block = BasicBlock(
-                self.conv2d_config, imsize, start_size, [start_size, next_size],
-                residual=self._residual)
+            block = BasicBlock(self.conv2d_config, imsize, start_size, [start_size, next_size], residual=self._residual)
             self.decoder.add_module(f"basic_block{imsize}", block)
 
             to_rgb = build_base_conv(
-                self.conv2d_config, False, in_channels=next_size,
-                out_channels=self._image_channels, kernel_size=1)
+                self.conv2d_config, False, in_channels=next_size, out_channels=self._image_channels, kernel_size=1
+            )
             self.rgb_convolutions[str(imsize)] = to_rgb
             imsize *= 2
         self.norm_constant = len(self.rgb_convolutions)
@@ -545,14 +531,10 @@ class MSGGenerator(BaseGenerator):
     def forward_decoder(self, x, mask, batch):
         imsize_start = max(x.shape[-1] // 2, 1)
         rgb = torch.zeros(
-            (x.shape[0], self._image_channels,
-             imsize_start, imsize_start),
-            dtype=x.dtype, device=x.device)
+            (x.shape[0], self._image_channels, imsize_start, imsize_start), dtype=x.dtype, device=x.device
+        )
         mask_size = 1
-        mask_out = torch.zeros(
-            (x.shape[0], mask_size,
-             imsize_start, imsize_start),
-            dtype=x.dtype, device=x.device)
+        mask_out = torch.zeros((x.shape[0], mask_size, imsize_start, imsize_start), dtype=x.dtype, device=x.device)
         imsize = self._min_fmap_resolution // 2
         for module in self.decoder:
             x, mask, batch = module((x, mask, batch))
@@ -562,8 +544,7 @@ class MSGGenerator(BaseGenerator):
                 mask_out = up(mask_out)
                 conv = self.rgb_convolutions[str(imsize)]
                 rgb_, mask_ = conv((x, mask))
-                assert rgb_.shape == rgb.shape,\
-                    f"rgb_ {rgb_.shape}, rgb: {rgb.shape}"
+                assert rgb_.shape == rgb.shape, f"rgb_ {rgb_.shape}, rgb: {rgb.shape}"
                 rgb = rgb + rgb_
         return rgb / self.norm_constant, mask_out
 
@@ -578,24 +559,15 @@ class MSGGenerator(BaseGenerator):
                 unet_features[module._resolution] = (x, mask)
         return x, mask, unet_features
 
-    def forward(
-            self,
-            condition,
-            mask, keypoints=None, z=None,
-            **kwargs):
+    def forward(self, condition, mask, keypoints=None, z=None, **kwargs):
         keypoints = keypoints[:, :, :2].flatten(start_dim=1).clip(-1, 1)
         if z is None:
             z = self.get_z(condition)
         z = z.view(-1, 32, 4, 4)
-        batch = dict(
-            landmarks=keypoints,
-            z=z)
+        batch = dict(landmarks=keypoints, z=z)
         orig_mask = mask
         x, mask, unet_features = self.forward_encoder(condition, mask, batch)
-        batch = dict(
-            landmarks=keypoints,
-            z=z,
-            unet_features=unet_features)
+        batch = dict(landmarks=keypoints, z=z, unet_features=unet_features)
         x, mask = self.forward_decoder(x, mask, batch)
         x = condition * orig_mask + (1 - orig_mask) * x
         return dict(img=x)

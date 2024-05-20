@@ -1,7 +1,4 @@
-from .im18 import (
-    G_optim, D_optim, loss_fnc, common, EMA, train,
-    generator, discriminator
-)
+from .im18 import G_optim, D_optim, loss_fnc, common, EMA, train, generator, discriminator
 from .....datasets.fdh_resampled_wds.fdh72 import data
 
 generator.update(

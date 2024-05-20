@@ -12,11 +12,10 @@ from tops.config import instantiate
 import tops
 from pycocotools.coco import COCO
 from dp2.detection.box_utils_fdf import expand_bbox
-def iteratively_anonymize(
-        anonymizer,
-        target_directory: pathlib.Path,
-        synthesis_kwargs):
-    criteria = 128*128
+
+
+def iteratively_anonymize(anonymizer, target_directory: pathlib.Path, synthesis_kwargs):
+    criteria = 128 * 128
     target_directory.mkdir(exist_ok=True, parents=True)
     coco_path = pathlib.Path("/mnt/work2/haakohu/datasets/coco/")
     data = COCO(coco_path.joinpath("annotations", "person_keypoints_train2017.json"))
@@ -41,23 +40,24 @@ def iteratively_anonymize(
         im = im.convert("RGB")
         im = np.array(im)
         expanded_boxes_old = np.stack([expand_bbox(box, im.shape[-2:], False) for box in boxes.numpy()])
-        area = (expanded_boxes_old[:, 2] - expanded_boxes_old[:, 0]) * (expanded_boxes_old[:, 3] - expanded_boxes_old[:, 1])
+        area = (expanded_boxes_old[:, 2] - expanded_boxes_old[:, 0]) * (
+            expanded_boxes_old[:, 3] - expanded_boxes_old[:, 1]
+        )
         boxes = boxes[area >= criteria]
-        
+
         output_path.parent.mkdir(exist_ok=True, parents=True)
         if len(boxes) == 0:
             shutil.copy(image_path, output_path)
             continue
         num_boxes_total += boxes.shape[0]
-        detection = [
-            FaceDetection(boxes, target_imsize=(256, 256), fdf128_expand=False)
-        ]
+        detection = [FaceDetection(boxes, target_imsize=(256, 256), fdf128_expand=False)]
         im = torch.from_numpy(np.rollaxis(im, 2))
         im = anonymizer(im, **synthesis_kwargs, detections=detection)
         im = utils.im2numpy(im)
         im = Image.fromarray(im).convert(orig_im_mode)
         im.save(output_path, format="JPEG", optimize=False, quality=100, subsampling=0)
     print("Total number of boxes larger than 128x128:", num_boxes_total)
+
 
 def main():
     config_path = "configs/anonymizers/face.py"
@@ -70,5 +70,6 @@ def main():
     anonymizer = instantiate(cfg.anonymizer, load_cache=True)
     synthesis_kwargs = dict(amp=False, multi_modal_truncation=False, truncation_value=0, n_sampling_steps=1)
     iteratively_anonymize(anonymizer, target_dir, synthesis_kwargs)
+
 
 main()

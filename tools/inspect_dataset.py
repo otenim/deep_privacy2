@@ -8,6 +8,7 @@ from dp2.utils import vis_utils
 import numpy as np
 from PIL import Image
 
+
 def get_image(batch, cfg, fscale_vis):
     im0 = batch["condition"]
     im1 = batch["img"]
@@ -18,7 +19,7 @@ def get_image(batch, cfg, fscale_vis):
 
     im = tops.np_make_image_grid(im, nrow=len(im0))
     if fscale_vis != 1:
-        new_shape = [int(_*fscale_vis) for _ in im.shape[:2][::-1]]
+        new_shape = [int(_ * fscale_vis) for _ in im.shape[:2][::-1]]
         im = np.array(Image.fromarray(im).resize(new_shape))
     return im
 

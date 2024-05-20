@@ -12,6 +12,7 @@ import torch
 import shutil
 from dp2.detection.structures import FaceDetection
 
+
 def iteratively_anonymize(target_directory: Path, anonymizer, synthesis_kwargs):
 
     source_directory = Path("/mnt/work2/haakohu/datasets/bdd100k")
@@ -19,6 +20,7 @@ def iteratively_anonymize(target_directory: Path, anonymizer, synthesis_kwargs):
 
     with open(source_directory.joinpath("face_boxes_train.json"), "r") as fp:
         import json
+
         face_detections = json.load(fp)
     for image_id in tqdm.tqdm(data.imgs):
         image_info = data.loadImgs([image_id])[0]
@@ -46,9 +48,7 @@ def iteratively_anonymize(target_directory: Path, anonymizer, synthesis_kwargs):
 
         assert len(segmentation) > 0
         boxes = torch.tensor(face_detections[str(image_id)]).round().long().view(-1, 4)
-        detection = [
-            FaceDetection(boxes, target_imsize=(128, 128), fdf128_expand=True)
-        ]
+        detection = [FaceDetection(boxes, target_imsize=(128, 128), fdf128_expand=True)]
         im = Image.open(image_path)
         orig_im_mode = im.mode
         im = _apply_exif_orientation(im)
@@ -75,9 +75,7 @@ def main(config_path):
     cfg = utils.load_config(config_path)
     anonymizer = instantiate(cfg.anonymizer, load_cache=True)
     synthesis_kwargs = dict(amp=False, multi_modal_truncation=True, truncation_value=0)
-    iteratively_anonymize(
-        target_dir,
-        anonymizer, synthesis_kwargs)
+    iteratively_anonymize(target_dir, anonymizer, synthesis_kwargs)
 
 
 main()

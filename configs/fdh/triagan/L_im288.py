@@ -1,14 +1,9 @@
-from .L_im144 import (
-    G_optim, D_optim, loss_fnc, common, EMA, train,
-    generator, discriminator, ckpt_mapper
-)
+from .L_im144 import G_optim, D_optim, loss_fnc, common, EMA, train, generator, discriminator, ckpt_mapper
 from ...datasets.fdh_no_embeddings import data
-from ...discriminators.projected_discriminator import (
-    VIT_PATCH_MAE_LARGE,
-    RN50_CLIP
-)
+from ...discriminators.projected_discriminator import VIT_PATCH_MAE_LARGE, RN50_CLIP
 from functools import partial
 from tops.config import LazyCall as L
+
 generator.update(
     dim=128,
     dim_mults=[1, 2, 4, 4, 4, 4],

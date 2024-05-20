@@ -21,13 +21,7 @@ def slerp(a, b, t):
 
 
 @torch.no_grad()
-def calculate_ppl(
-        dataloader,
-        generator,
-        latent_space=None,
-        data_len=None,
-        upsample_size=None,
-        **kwargs) -> dict:
+def calculate_ppl(dataloader, generator, latent_space=None, data_len=None, upsample_size=None, **kwargs) -> dict:
     """
     Inspired by https://github.com/NVlabs/stylegan/blob/master/metrics/perceptual_path_length.py
     """
@@ -36,28 +30,28 @@ def calculate_ppl(
     assert latent_space in ["Z", "W"], f"Not supported latent space: {latent_space}"
     assert len(upsample_size) == 2
     epsilon = PPL_DEFAULTS["ppl_epsilon"]
-    interp = PPL_DEFAULTS['ppl_z_interp_mode']
-    similarity_name = PPL_DEFAULTS['ppl_sample_similarity']
-    sample_similarity_resize = PPL_DEFAULTS['ppl_sample_similarity_resize']
-    sample_similarity_dtype = PPL_DEFAULTS['ppl_sample_similarity_dtype']
-    discard_percentile_lower = PPL_DEFAULTS['ppl_discard_percentile_lower']
-    discard_percentile_higher = PPL_DEFAULTS['ppl_discard_percentile_higher']
+    interp = PPL_DEFAULTS["ppl_z_interp_mode"]
+    similarity_name = PPL_DEFAULTS["ppl_sample_similarity"]
+    sample_similarity_resize = PPL_DEFAULTS["ppl_sample_similarity_resize"]
+    sample_similarity_dtype = PPL_DEFAULTS["ppl_sample_similarity_dtype"]
+    discard_percentile_lower = PPL_DEFAULTS["ppl_discard_percentile_lower"]
+    discard_percentile_higher = PPL_DEFAULTS["ppl_discard_percentile_higher"]
 
-    vassert(type(epsilon) is float and epsilon > 0, 'Epsilon must be a small positive floating point number')
-    vassert(discard_percentile_lower is None or 0 < discard_percentile_lower < 100, 'Invalid percentile')
-    vassert(discard_percentile_higher is None or 0 < discard_percentile_higher < 100, 'Invalid percentile')
+    vassert(type(epsilon) is float and epsilon > 0, "Epsilon must be a small positive floating point number")
+    vassert(discard_percentile_lower is None or 0 < discard_percentile_lower < 100, "Invalid percentile")
+    vassert(discard_percentile_higher is None or 0 < discard_percentile_higher < 100, "Invalid percentile")
     if discard_percentile_lower is not None and discard_percentile_higher is not None:
-        vassert(0 < discard_percentile_lower < discard_percentile_higher < 100, 'Invalid percentiles')
+        vassert(0 < discard_percentile_lower < discard_percentile_higher < 100, "Invalid percentiles")
 
     sample_similarity = create_sample_similarity(
         similarity_name,
         sample_similarity_resize=sample_similarity_resize,
         sample_similarity_dtype=sample_similarity_dtype,
         cuda=False,
-        **kwargs
+        **kwargs,
     )
     sample_similarity = tops.to_cuda(sample_similarity)
-    rng = np.random.RandomState(get_kwarg('rng_seed', kwargs))
+    rng = np.random.RandomState(get_kwarg("rng_seed", kwargs))
     distances = []
     if data_len is None:
         data_len = len(dataloader) * dataloader.batch_size
@@ -92,7 +86,7 @@ def calculate_ppl(
         rgb2 = utils.denormalize_img(rgb2).mul(255).byte()
 
         sim = sample_similarity(rgb1, rgb2)
-        dist_lat_e01 = sim / (epsilon ** 2)
+        dist_lat_e01 = sim / (epsilon**2)
         distances[start:end] = dist_lat_e01.view(-1)
     distances = distances[:n_samples]
     distances = tops.all_gather_uneven(distances).cpu().numpy()
@@ -101,10 +95,10 @@ def calculate_ppl(
     if tops.rank() == 0:
         cond, lo, hi = None, None, None
         if discard_percentile_lower is not None:
-            lo = np.percentile(distances, discard_percentile_lower, interpolation='lower')
+            lo = np.percentile(distances, discard_percentile_lower, interpolation="lower")
             cond = lo <= distances
         if discard_percentile_higher is not None:
-            hi = np.percentile(distances, discard_percentile_higher, interpolation='higher')
+            hi = np.percentile(distances, discard_percentile_higher, interpolation="higher")
             cond = np.logical_and(cond, distances <= hi)
         if cond is not None:
             distances = np.extract(cond, distances)

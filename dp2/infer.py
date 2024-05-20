@@ -59,7 +59,7 @@ def build_trained_discriminator(cfg, map_location=None):
 
 
 def load_state_dict(module: torch.nn.Module, state_dict: dict):
-    ignore_key = "style_net.w_centers" # Loaded by buyild_trained_generator
+    ignore_key = "style_net.w_centers"  # Loaded by buyild_trained_generator
     module_sd = module.state_dict()
     to_remove = []
     for key, item in state_dict.items():

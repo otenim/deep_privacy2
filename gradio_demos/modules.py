@@ -40,7 +40,17 @@ class GuidedDemo:
                 print(text_prompt)
         self.edits = defaultdict(defaultdict)
 
-    def anonymize(self, img, show_boxes: bool, current_box_idx: int, current_styles, current_boxes, update_identity, edits, cache_id=None):
+    def anonymize(
+        self,
+        img,
+        show_boxes: bool,
+        current_box_idx: int,
+        current_styles,
+        current_boxes,
+        update_identity,
+        edits,
+        cache_id=None,
+    ):
         if not isinstance(img, torch.Tensor):
             img, cache_id = pil2torch(img)
             img = tops.to_cuda(img)
@@ -54,11 +64,14 @@ class GuidedDemo:
             update_identity[int(face_idx)] = True
         assert img.dtype == torch.uint8
         img = self.anonymizer(
-            img, truncation_value=self.truncation_value,
-            multi_modal_truncation=self.multi_modal_truncation, amp=True,
+            img,
+            truncation_value=self.truncation_value,
+            multi_modal_truncation=self.multi_modal_truncation,
+            amp=True,
             cache_id=cache_id,
             all_styles=edited_styles,
-            update_identity=update_identity)
+            update_identity=update_identity,
+        )
         update_identity = [True for i in range(len(update_identity))]
         img = utils.im2numpy(img)
         if show_boxes:
@@ -72,32 +85,43 @@ class GuidedDemo:
         det = self.anonymizer.detector.forward_and_cache(img, cache_id, load_cache=True)[0]
         current_styles = []
         for i in range(len(det)):
-            s = get_styles(
-                np.random.randint(0, 999999), self.generator,
-                None, truncation_value=self.truncation_value)
+            s = get_styles(np.random.randint(0, 999999), self.generator, None, truncation_value=self.truncation_value)
             current_styles.append(s)
         update_identity = [True for i in range(len(det))]
         current_boxes = np.array(det.boxes)
         edits = defaultdict(defaultdict)
         cur_face_idx = -1 % len(current_boxes)
         img, update_identity = self.anonymize(
-            img, show_boxes, cur_face_idx,
-            current_styles, current_boxes, update_identity, edits, cache_id=cache_id)
+            img, show_boxes, cur_face_idx, current_styles, current_boxes, update_identity, edits, cache_id=cache_id
+        )
         return img, current_styles, current_boxes, update_identity, edits, cur_face_idx
 
-    def change_face(self, change, cur_face_idx, current_boxes, input_image, show_boxes, current_styles, update_identity, edits):
+    def change_face(
+        self, change, cur_face_idx, current_boxes, input_image, show_boxes, current_styles, update_identity, edits
+    ):
         cur_face_idx = (cur_face_idx + change) % len(current_boxes)
         img, update_identity = self.anonymize(
-            input_image, show_boxes, cur_face_idx,
-            current_styles, current_boxes, update_identity, edits)
+            input_image, show_boxes, cur_face_idx, current_styles, current_boxes, update_identity, edits
+        )
         return img, update_identity, cur_face_idx
 
-    def add_style(self, face_idx: int, prompt: str, strength: float, input_image, show_boxes, current_styles, current_boxes, update_identity, edits):
+    def add_style(
+        self,
+        face_idx: int,
+        prompt: str,
+        strength: float,
+        input_image,
+        show_boxes,
+        current_styles,
+        current_boxes,
+        update_identity,
+        edits,
+    ):
         face_idx = face_idx % len(current_boxes)
         edits[face_idx][prompt] = strength
         img, update_identity = self.anonymize(
-            input_image, show_boxes, face_idx,
-            current_styles, current_boxes, update_identity, edits)
+            input_image, show_boxes, face_idx, current_styles, current_boxes, update_identity, edits
+        )
         return img, update_identity, edits
 
     def setup_interface(self):
@@ -106,8 +130,7 @@ class GuidedDemo:
         update_identity = gradio.State([])
         edits = gradio.State([])
         with gradio.Row():
-            input_image = gradio.Image(
-                type="pil", label="Upload your image or try the example below!", source="webcam")
+            input_image = gradio.Image(type="pil", label="Upload your image or try the example below!", source="webcam")
             output_image = gradio.Image(type="numpy", label="Output")
         with gradio.Row():
             update_btn = gradio.Button("Update Anonymization").style(full_width=True)
@@ -118,34 +141,68 @@ class GuidedDemo:
             next_ = gradio.Button("Next Person")
         with gradio.Row():
             text_prompt = gradio.Textbox(
-                placeholder=" | ".join(list(self.precomputed_edits)),
-                label="Text Prompt for Edit")
-            edit_strength = gradio.Slider(0, 5, step=.01)
+                placeholder=" | ".join(list(self.precomputed_edits)), label="Text Prompt for Edit"
+            )
+            edit_strength = gradio.Slider(0, 5, step=0.01)
             add_btn = gradio.Button("Add Edit")
             add_btn.click(
                 self.add_style,
-                inputs=[cur_face_idx, text_prompt, edit_strength, input_image, show_boxes,current_styles, current_boxes, update_identity, edits],
-                outputs=[output_image, update_identity, edits])
+                inputs=[
+                    cur_face_idx,
+                    text_prompt,
+                    edit_strength,
+                    input_image,
+                    show_boxes,
+                    current_styles,
+                    current_boxes,
+                    update_identity,
+                    edits,
+                ],
+                outputs=[output_image, update_identity, edits],
+            )
         update_btn.click(
             self.update_image,
             inputs=[input_image, show_boxes],
-            outputs=[output_image, current_styles, current_boxes, update_identity, edits, cur_face_idx])
+            outputs=[output_image, current_styles, current_boxes, update_identity, edits, cur_face_idx],
+        )
         input_image.change(
             self.update_image,
             inputs=[input_image, show_boxes],
-            outputs=[output_image, current_styles, current_boxes, update_identity, edits, cur_face_idx])
+            outputs=[output_image, current_styles, current_boxes, update_identity, edits, cur_face_idx],
+        )
         previous.click(
             self.change_face,
-            inputs=[gradio.State(-1), cur_face_idx, current_boxes, input_image, show_boxes, current_styles, update_identity, edits],
-            outputs=[output_image, update_identity, cur_face_idx])
+            inputs=[
+                gradio.State(-1),
+                cur_face_idx,
+                current_boxes,
+                input_image,
+                show_boxes,
+                current_styles,
+                update_identity,
+                edits,
+            ],
+            outputs=[output_image, update_identity, cur_face_idx],
+        )
         next_.click(
             self.change_face,
-            inputs=[gradio.State(1), cur_face_idx, current_boxes, input_image, show_boxes,current_styles, update_identity, edits],
-            outputs=[output_image, update_identity, cur_face_idx])
+            inputs=[
+                gradio.State(1),
+                cur_face_idx,
+                current_boxes,
+                input_image,
+                show_boxes,
+                current_styles,
+                update_identity,
+                edits,
+            ],
+            outputs=[output_image, update_identity, cur_face_idx],
+        )
         show_boxes.change(
             self.anonymize,
             inputs=[input_image, show_boxes, cur_face_idx, current_styles, current_boxes, update_identity, edits],
-            outputs=[output_image, update_identity])
+            outputs=[output_image, update_identity],
+        )
 
 
 class WebcamDemo:
@@ -163,8 +220,9 @@ class WebcamDemo:
             track = gradio.Checkbox(value=False, label="Track detections (samples same latent variable per track)")
         input_image.stream(
             self.anonymize,
-            inputs=[input_image, visualize_det, truncation_value,truncation, track, gradio.Variable(False)],
-            outputs=[output_image])
+            inputs=[input_image, visualize_det, truncation_value, truncation, track, gradio.Variable(False)],
+            outputs=[output_image],
+        )
         self.track = True
 
     def anonymize(self, img: Image, visualize_detection: bool, truncation_value, truncation_type, track, reset_track):
@@ -183,7 +241,8 @@ class WebcamDemo:
                 multi_modal_truncation=mmt,
                 amp=True,
                 cache_id=cache_id,
-                track=track)
+                track=track,
+            )
         img = utils.im2numpy(img)
         return img
 
@@ -204,24 +263,54 @@ class ExampleDemo(WebcamDemo):
         visualize_det = gradio.Checkbox(value=False, label="Show Detections")
         visualize_det.change(
             self.anonymize,
-            inputs=[input_image, visualize_det, truncation_value, truncation, gradio.Variable(True), gradio.Variable(False)],
-            outputs=[output_image])
-        gradio.Examples(
-            ["media/erling.jpg", "media/regjeringen.jpg"], inputs=[input_image]
+            inputs=[
+                input_image,
+                visualize_det,
+                truncation_value,
+                truncation,
+                gradio.Variable(True),
+                gradio.Variable(False),
+            ],
+            outputs=[output_image],
         )
+        gradio.Examples(["media/erling.jpg", "media/regjeringen.jpg"], inputs=[input_image])
 
         update_btn.click(
             self.anonymize,
-            inputs=[input_image, visualize_det, truncation_value, truncation, gradio.Variable(True), gradio.Variable(False)],
-            outputs=[output_image])
+            inputs=[
+                input_image,
+                visualize_det,
+                truncation_value,
+                truncation,
+                gradio.Variable(True),
+                gradio.Variable(False),
+            ],
+            outputs=[output_image],
+        )
         resample.click(
             self.anonymize,
-            inputs=[input_image, visualize_det, truncation_value, truncation, gradio.Variable(True), gradio.Variable(True)],
-            outputs=[output_image])
+            inputs=[
+                input_image,
+                visualize_det,
+                truncation_value,
+                truncation,
+                gradio.Variable(True),
+                gradio.Variable(True),
+            ],
+            outputs=[output_image],
+        )
         input_image.change(
             self.anonymize,
-            inputs=[input_image, visualize_det, truncation_value, truncation, gradio.Variable(False), gradio.Variable(True)],
-            outputs=[output_image])
+            inputs=[
+                input_image,
+                visualize_det,
+                truncation_value,
+                truncation,
+                gradio.Variable(False),
+                gradio.Variable(True),
+            ],
+            outputs=[output_image],
+        )
         self.track = False
         self.truncation_value = truncation_value
 

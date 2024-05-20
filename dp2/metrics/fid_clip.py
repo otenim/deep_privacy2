@@ -4,24 +4,21 @@ import torchvision
 from pathlib import Path
 from dp2 import utils
 import tops
+
 try:
     import clip
 except ImportError:
     print("Could not import clip.")
 from torch_fidelity.metric_fid import fid_features_to_statistics, fid_statistics_to_metric
+
 clip_model = None
 clip_preprocess = None
 
 
 @torch.no_grad()
 def compute_fid_clip(
-        dataloader, generator,
-        cache_directory,
-        data_len=None,
-        truncation_value=None,
-        multi_modal_truncate=False,
-        **kwargs
-    ) -> dict:
+    dataloader, generator, cache_directory, data_len=None, truncation_value=None, multi_modal_truncate=False, **kwargs
+) -> dict:
     """
     FID CLIP following the description in The Role of ImageNet Classes in Frechet Inception Distance, Thomas Kynkaamniemi et al.
     Args:
@@ -34,13 +31,17 @@ def compute_fid_clip(
         img_mean = normalize_fn.mean
         img_std = normalize_fn.std
         clip_model = tops.to_cuda(clip_model.visual)
-        clip_preprocess = tops.to_cuda(torch.nn.Sequential(
-            torchvision.transforms.Resize((224, 224), interpolation=torchvision.transforms.InterpolationMode.BICUBIC),
-            torchvision.transforms.Normalize(img_mean, img_std)
-        ))
+        clip_preprocess = tops.to_cuda(
+            torch.nn.Sequential(
+                torchvision.transforms.Resize(
+                    (224, 224), interpolation=torchvision.transforms.InterpolationMode.BICUBIC
+                ),
+                torchvision.transforms.Normalize(img_mean, img_std),
+            )
+        )
     cache_directory = Path(cache_directory)
     if data_len is None:
-        data_len = len(dataloader)*dataloader.batch_size
+        data_len = len(dataloader) * dataloader.batch_size
     fid_cache_path = cache_directory.joinpath("fid_stats_clip.pkl")
     has_fid_cache = fid_cache_path.is_file()
     if not has_fid_cache:

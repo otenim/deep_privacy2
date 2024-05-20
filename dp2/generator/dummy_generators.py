@@ -14,10 +14,9 @@ class PixelationGenerator(BaseGenerator):
 
     def forward(self, img, condition, mask, **kwargs):
         old_shape = img.shape[-2:]
-        img = F.interpolate(img, size=(
-            self.pixelation_size, self.pixelation_size), mode="bilinear", align_corners=True)
+        img = F.interpolate(img, size=(self.pixelation_size, self.pixelation_size), mode="bilinear", align_corners=True)
         img = F.interpolate(img, size=old_shape, mode="bilinear", align_corners=True)
-        out = img*(1-mask) + condition*mask
+        out = img * (1 - mask) + condition * mask
         return {"img": out}
 
 
@@ -36,7 +35,7 @@ class MaskOutGenerator(BaseGenerator):
             img = torch.zeros_like(img)
         elif self.noise == "rand":
             img = torch.rand_like(img)
-        out = img*(1-mask) + condition*mask
+        out = img * (1 - mask) + condition * mask
         return {"img": out}
 
 
@@ -56,5 +55,5 @@ class GaussianBlurGenerator(BaseGenerator):
         self.sigma = 7
 
     def forward(self, img, condition, mask, **kwargs):
-        img_blur = gaussian_blur(img, kernel_size=min(self.sigma*3, img.shape[-1]), sigma=self.sigma)
-        return dict(img=img * mask + (1-mask) * img_blur)
+        img_blur = gaussian_blur(img, kernel_size=min(self.sigma * 3, img.shape[-1]), sigma=self.sigma)
+        return dict(img=img * mask + (1 - mask) * img_blur)

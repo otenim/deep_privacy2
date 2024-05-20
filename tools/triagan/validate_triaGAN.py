@@ -15,22 +15,24 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 torch.backends.cudnn.benchmark = True
 
+
 def print_metric(path):
     with open(path, "r") as fp:
         all_metrics = json.load(fp)
-    print("="*80)
-    print("="*80)
-    print("="*80)
+    print("=" * 80)
+    print("=" * 80)
+    print("=" * 80)
     for k, v in all_metrics.items():
         print(f"{k:40}: {v}")
-    print("="*80)
-    print("="*80)
-    print("="*80)
+    print("=" * 80)
+    print("=" * 80)
+    print("=" * 80)
+
 
 def validate(
-        config_path,
-        recompute: bool,
-    ):
+    config_path,
+    recompute: bool,
+):
     tops.set_seed(0)
     tops.set_AMP(True)
     os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -42,7 +44,7 @@ def validate(
             return
 
     batch_size = 8
-    cfg.train.batch_size = batch_size   
+    cfg.train.batch_size = batch_size
     dl_val = instantiate(cfg.data.val.loader)
     G = build_trained_generator(cfg)
     tops.set_seed(0)
@@ -50,12 +52,16 @@ def validate(
     ppl = calculate_ppl(dl_val, G, data_len=30_000, upsample_size=(288, 160))
     print(ppl)
     tops.set_seed(0)
-    metrics = compute_metrics_iteratively(dl_val, G, cache_directory=f".final_metrics_cache{cfg.data.imsize[0]}", data_len=30_000)
+    metrics = compute_metrics_iteratively(
+        dl_val, G, cache_directory=f".final_metrics_cache{cfg.data.imsize[0]}", data_len=30_000
+    )
     tops.set_seed(0)
     fid_clip = compute_fid_clip(dl_val, G, cache_directory=f".final_metrics_cache{cfg.data.imsize[0]}", data_len=30_000)
     commit = str(subprocess.check_output("git rev-parse HEAD", shell=True).decode()).strip()
     all_metrics = {
-        **ppl, **metrics, **fid_clip,
+        **ppl,
+        **metrics,
+        **fid_clip,
     }
     all_metrics["commit"] = commit
     for k, v in all_metrics.items():
@@ -66,7 +72,6 @@ def validate(
     with open(output_path, mode="w") as fp:
         json.dump(all_metrics, fp)
     print_metric(output_path)
-
 
 
 @click.command()

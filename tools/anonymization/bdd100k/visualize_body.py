@@ -9,13 +9,15 @@ from pycocotools.coco import COCO
 from ..cityscapes.anonymize_body import cse_post_process_cfg
 from dp2 import utils
 
+
 def main():
     source_directory = pathlib.Path("/mnt/work2/haakohu/datasets/bdd100k")
     data = COCO(source_directory.joinpath("jsons/ins_seg_train_cocofmt.json"))
     with open(source_directory.joinpath("annotated_keypoints_train.json"), "r") as fp:
         import json
+
         all_keypoints = json.load(fp)
-    vis_thr = .5
+    vis_thr = 0.5
     for image_id in tqdm.tqdm(data.imgs):
         image_info = data.loadImgs([image_id])[0]
 
@@ -45,21 +47,17 @@ def main():
         keypoints[:, :, 2] = keypoints[:, :, 2] > vis_thr
 
         detection = PersonDetection(
-            segmentation,
-            **cse_post_process_cfg,
-            orig_imshape_CHW=(3, *im.shape[:2]),
-            keypoints=keypoints
+            segmentation, **cse_post_process_cfg, orig_imshape_CHW=(3, *im.shape[:2]), keypoints=keypoints
         )
         im = torch.from_numpy(np.rollaxis(im, 2))
         im = detection.visualize(im)
         im = utils.im2numpy(im)
         import cv2
+
         cv2.imshow("lol", im[:, :, ::-1])
         key = cv2.waitKey(0)
         if key == ord("q"):
             exit()
-
-
 
 
 main()

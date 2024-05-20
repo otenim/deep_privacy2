@@ -49,8 +49,7 @@ class ProjectedViT(nn.Module):
         model.layer_hooks = layer_hooks
         self.model = model
         self.layer1 = nn.Sequential(
-            nn.Conv2d(vit_dim, proj_features[0], 1),
-            nn.ConvTranspose2d(proj_features[0], proj_features[0], 4, stride=4)
+            nn.Conv2d(vit_dim, proj_features[0], 1), nn.ConvTranspose2d(proj_features[0], proj_features[0], 4, stride=4)
         )
 
         self.layer2 = nn.Sequential(
@@ -66,12 +65,15 @@ class ProjectedViT(nn.Module):
             nn.Conv2d(vit_dim, proj_features[3], 1),
             nn.Conv2d(proj_features[3], proj_features[3], 3, stride=2, padding=1),
         )
-        self.model.blocks = self.model.blocks[:max(self.model.layer_hooks)+1]
+        self.model.blocks = self.model.blocks[: max(self.model.layer_hooks) + 1]
 
     def forward_vit(self, x):
         b, c, h, w = x.shape
         pos_embed = _resize_pos_embed(
-            self.model.pos_embed, h // self.model.patch_size[1], w // self.model.patch_size[0], self.model.slice_start_idx
+            self.model.pos_embed,
+            h // self.model.patch_size[1],
+            w // self.model.patch_size[0],
+            self.model.slice_start_idx,
         )
 
         if hasattr(self.model.patch_embed, "backbone"):
@@ -81,15 +83,11 @@ class ProjectedViT(nn.Module):
         x = self.model.patch_embed.proj(x).flatten(2).transpose(1, 2)
 
         if hasattr(self.model, "dist_token") and self.model.dist_token is not None:
-            cls_tokens = self.model.cls_token.expand(
-                b, -1, -1
-            )  # stole cls_tokens impl from Phil Wang, thanks
+            cls_tokens = self.model.cls_token.expand(b, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
             dist_token = self.model.dist_token.expand(b, -1, -1)
             x = torch.cat((cls_tokens, dist_token, x), dim=1)
         else:
-            cls_tokens = self.model.cls_token.expand(
-                b, -1, -1
-            )  # stole cls_tokens impl from Phil Wang, thanks
+            cls_tokens = self.model.cls_token.expand(b, -1, -1)  # stole cls_tokens impl from Phil Wang, thanks
             x = torch.cat((cls_tokens, x), dim=1)
 
         x = x + pos_embed
@@ -104,9 +102,11 @@ class ProjectedViT(nn.Module):
     def forward(self, x: torch.Tensor):
         b, c, h, w = x.shape
         features = self.forward_vit(x)
-        features = [x[:, self.model.slice_start_idx:] for x in features]
+        features = [x[:, self.model.slice_start_idx :] for x in features]
         features = [  # n l c -> n c h w
-            torch.transpose(x, 1, 2).unflatten(dim=-1, sizes=(h//self.model.patch_size[0], w//self.model.patch_size[1]))
+            torch.transpose(x, 1, 2).unflatten(
+                dim=-1, sizes=(h // self.model.patch_size[0], w // self.model.patch_size[1])
+            )
             for x in features
         ]
 
@@ -124,7 +124,7 @@ def _make_vit_timm(model_name, weight_path=None):
 
 def _resize_pos_embed(posemb: torch.Tensor, gs_h: int, gs_w: int, slice_start_idx: int) -> torch.Tensor:
     posemb_tok, posemb_grid = (
-        posemb[:, : slice_start_idx],
+        posemb[:, :slice_start_idx],
         posemb[0, slice_start_idx:],
     )
 

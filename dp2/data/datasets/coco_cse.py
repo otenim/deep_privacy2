@@ -9,7 +9,7 @@ from torch.hub import get_dir as get_hub_dir
 
 def cache_embed_stats(embed_map: torch.Tensor):
     mean = embed_map.mean(dim=0, keepdim=True)
-    rstd = ((embed_map - mean).square().mean(dim=0, keepdim=True)+1e-8).rsqrt()
+    rstd = ((embed_map - mean).square().mean(dim=0, keepdim=True) + 1e-8).rsqrt()
 
     cache = dict(mean=mean, rstd=rstd, embed_map=embed_map)
     path = pathlib.Path(get_hub_dir(), f"embed_map_stats.torch")
@@ -19,20 +19,21 @@ def cache_embed_stats(embed_map: torch.Tensor):
 
 class CocoCSE(torch.utils.data.Dataset):
 
-    def __init__(self,
-                 dirpath: Union[str, pathlib.Path],
-                 transform: Optional[Callable],
-                 normalize_E: bool,):
+    def __init__(
+        self,
+        dirpath: Union[str, pathlib.Path],
+        transform: Optional[Callable],
+        normalize_E: bool,
+    ):
         dirpath = pathlib.Path(dirpath)
         self.dirpath = dirpath
 
         self.transform = transform
-        assert self.dirpath.is_dir(),\
-            f"Did not find dataset at: {dirpath}"
+        assert self.dirpath.is_dir(), f"Did not find dataset at: {dirpath}"
         self.image_paths, self.embedding_paths = self._load_impaths()
         self.embed_map = torch.from_numpy(np.load(self.dirpath.joinpath("embed_map.npy")))
         mean = self.embed_map.mean(dim=0, keepdim=True)
-        rstd = ((self.embed_map - mean).square().mean(dim=0, keepdim=True)+1e-8).rsqrt()
+        rstd = ((self.embed_map - mean).square().mean(dim=0, keepdim=True) + 1e-8).rsqrt()
         self.embed_map = (self.embed_map - mean) * rstd
         cache_embed_stats(self.embed_map)
 
@@ -40,9 +41,7 @@ class CocoCSE(torch.utils.data.Dataset):
         image_dir = self.dirpath.joinpath("images")
         image_paths = list(image_dir.glob("*.png"))
         image_paths.sort()
-        embedding_paths = [
-            self.dirpath.joinpath("embedding", x.stem + ".npy") for x in image_paths
-        ]
+        embedding_paths = [self.dirpath.joinpath("embedding", x.stem + ".npy") for x in image_paths]
         return image_paths, embedding_paths
 
     def __len__(self):
@@ -61,7 +60,7 @@ class CocoCSE(torch.utils.data.Dataset):
             "mask": mask[None],
             "embed_map": self.embed_map,
             "border": border[None],
-            "E_mask": E_mask[None]
+            "E_mask": E_mask[None],
         }
         if self.transform is None:
             return batch

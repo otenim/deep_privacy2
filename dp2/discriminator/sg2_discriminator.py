@@ -9,17 +9,17 @@ from ..layers.sg2_layers import DiscriminatorEpilogue, ResidualBlock, Block
 class SG2Discriminator(layers.Module):
 
     def __init__(
-            self,
-            cnum: int,
-            max_cnum_mul: int,
-            imsize,
-            min_fmap_resolution: int,
-            im_channels: int,
-            input_condition: bool,
-            conv_clamp: int,
-            input_cse: bool,
-            cse_nc: int,
-            fix_residual: bool,
+        self,
+        cnum: int,
+        max_cnum_mul: int,
+        imsize,
+        min_fmap_resolution: int,
+        im_channels: int,
+        input_condition: bool,
+        conv_clamp: int,
+        input_cse: bool,
+        cse_nc: int,
+        fix_residual: bool,
     ):
         super().__init__()
 
@@ -34,33 +34,33 @@ class SG2Discriminator(layers.Module):
 
         out_ch = self.get_chsize(self._max_imsize)
         self.from_rgb = Block(
-            im_channels + input_condition*(im_channels+1) + input_cse*(cse_nc+1),
-            out_ch, conv_clamp=conv_clamp
+            im_channels + input_condition * (im_channels + 1) + input_cse * (cse_nc + 1), out_ch, conv_clamp=conv_clamp
         )
-        n_levels = int(np.log2(self._max_imsize) - np.log2(min_fmap_resolution))+1
+        n_levels = int(np.log2(self._max_imsize) - np.log2(min_fmap_resolution)) + 1
 
         for i in range(n_levels):
-            resolution = [x//2**i for x in imsize]
+            resolution = [x // 2**i for x in imsize]
             in_ch = self.get_chsize(max(resolution))
-            out_ch = self.get_chsize(max(max(resolution)//2, min_fmap_resolution))
+            out_ch = self.get_chsize(max(max(resolution) // 2, min_fmap_resolution))
 
             down = 2
             if i == 0:
                 down = 1
-            block = ResidualBlock(
-                in_ch, out_ch, down=down, conv_clamp=conv_clamp,
-                fix_residual=fix_residual
-            )
+            block = ResidualBlock(in_ch, out_ch, down=down, conv_clamp=conv_clamp, fix_residual=fix_residual)
             self.layers.append(block)
-        self.output_layer = DiscriminatorEpilogue(
-            out_ch, resolution, conv_clamp=conv_clamp)
+        self.output_layer = DiscriminatorEpilogue(out_ch, resolution, conv_clamp=conv_clamp)
 
-        self.register_buffer('resample_filter', upfirdn2d.setup_filter([1, 3, 3, 1]))
+        self.register_buffer("resample_filter", upfirdn2d.setup_filter([1, 3, 3, 1]))
 
     def forward(self, img, condition, mask, embedding=None, E_mask=None, **kwargs):
         to_cat = [img]
         if self._input_condition:
-            to_cat.extend([condition, mask, ])
+            to_cat.extend(
+                [
+                    condition,
+                    mask,
+                ]
+            )
         if self.input_cse:
             to_cat.extend([embedding, E_mask])
         x = torch.cat(to_cat, dim=1)
@@ -74,6 +74,6 @@ class SG2Discriminator(layers.Module):
 
     def get_chsize(self, imsize):
         n = int(np.log2(self._max_imsize) - np.log2(imsize))
-        mul = min(2 ** n, self._max_cnum_mul)
+        mul = min(2**n, self._max_cnum_mul)
         ch = self._cnum * mul
         return int(ch)

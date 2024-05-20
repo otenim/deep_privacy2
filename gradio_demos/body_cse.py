@@ -20,4 +20,3 @@ with gradio.Blocks() as demo:
 
 
 demo.launch()
-

@@ -9,9 +9,7 @@ detector = L(MaskRCNNVitPose)(
     post_process_cfg=dict(
         target_imsize=(288, 160),
         exp_bbox_cfg=dict(percentage_background=0.3, axis_minimum_expansion=0.1),
-        exp_bbox_filter=dict(
-            minimum_area=32 * 32, min_bbox_ratio_inside=0, aspect_ratio_range=[0, 99999]
-        ),
+        exp_bbox_filter=dict(minimum_area=32 * 32, min_bbox_ratio_inside=0, aspect_ratio_range=[0, 99999]),
         dilation_percentage=0.02,
         kp_vis_thr=0.05,
         insert_joint_map=True,

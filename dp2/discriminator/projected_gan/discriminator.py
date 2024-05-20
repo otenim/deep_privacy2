@@ -30,14 +30,19 @@ def down_block_patch(in_planes, out_planes):
 
 
 class SingleDisc(nn.Module):
-    def __init__(
-        self, cin, start_sz, end_sz, patch,
-        last_ksize
-    ):
+    def __init__(self, cin, start_sz, end_sz, patch, last_ksize):
         super().__init__()
-        channel_dict = {4: 512, 8: 512, 16: 256, 32: 128, 64: 64,
-                        128: 64, 256: 32, 512: 16, 1024: 8,
-                        }
+        channel_dict = {
+            4: 512,
+            8: 512,
+            16: 256,
+            32: 128,
+            64: 64,
+            128: 64,
+            256: 32,
+            512: 16,
+            1024: 8,
+        }
 
         # interpolate for start sz that are not powers of two
         if start_sz not in channel_dict.keys():
@@ -71,9 +76,7 @@ class MultiScaleD(nn.Module):
         self.mini_discs = nn.ModuleList()
         for i, (cin, res) in enumerate(zip(self.disc_in_channels, self.disc_in_res)):
             start_sz = res if not patch else 16
-            self.mini_discs.append(
-                SingleDisc(cin=cin, start_sz=start_sz, end_sz=8, patch=patch, last_ksize=last_ksize)
-            )
+            self.mini_discs.append(SingleDisc(cin=cin, start_sz=start_sz, end_sz=8, patch=patch, last_ksize=last_ksize))
 
     def forward(self, features):
         all_logits = []
@@ -120,7 +123,7 @@ class ProjectedDiscriminator(torch.nn.Module):
     def eval(self):
         return self.train(False)
 
-    def forward(self, img: torch.Tensor,  fnet_grad=True, **kwargs):
+    def forward(self, img: torch.Tensor, fnet_grad=True, **kwargs):
         img = img.add(1).div(2)
 
         logits = []

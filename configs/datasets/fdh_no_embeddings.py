@@ -1,11 +1,11 @@
-
 from dp2.data.transforms.transforms import ToFloat, Normalize, CreateCondition, InsertJointMap, RandomHorizontalFlip
-from tops.config import LazyCall as L 
+from tops.config import LazyCall as L
 from dp2.data.utils import get_coco_flipmap
-from tops.config import LazyCall as L 
+from tops.config import LazyCall as L
 import torch
 from pathlib import Path
 from .fdh import data, dataset_base_dir
+
 data.imsize = (288, 160)
 data_dir = Path(dataset_base_dir, "fdh_no_embeddings")
 data.train.loader.update(
@@ -13,7 +13,7 @@ data.train.loader.update(
     read_condition=False,
     gpu_transform=L(torch.nn.Sequential)(
         L(ToFloat)(keys=["img", "mask", "maskrcnn_mask"], norm=False),
-        L(Normalize)(mean=[0.5*255, 0.5*255, 0.5*255], std=[0.5*255, 0.5*255, 0.5*255], inplace=True),
+        L(Normalize)(mean=[0.5 * 255, 0.5 * 255, 0.5 * 255], std=[0.5 * 255, 0.5 * 255, 0.5 * 255], inplace=True),
         L(CreateCondition)(),
     ),
     transform=L(torch.nn.Sequential)(
@@ -30,6 +30,6 @@ data.val.loader.update(
     read_condition=False,
     load_embedding=False,
     transform=L(torch.nn.Sequential)(
-       L(InsertJointMap)(imsize="${data.imsize}"),
-    )
+        L(InsertJointMap)(imsize="${data.imsize}"),
+    ),
 )

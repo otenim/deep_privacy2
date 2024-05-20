@@ -6,9 +6,7 @@ from typing import Optional, List, Union, Tuple
 from .cse import from_E_to_vertex
 import numpy as np
 from tops import download_file
-from .torch_utils import (
-    denormalize_img, binary_dilation, binary_erosion,
-    remove_pad, crop_box)
+from .torch_utils import denormalize_img, binary_dilation, binary_erosion, remove_pad, crop_box
 from torchvision.utils import _generate_color_palette
 from PIL import Image, ImageColor, ImageDraw
 
@@ -16,33 +14,33 @@ from PIL import Image, ImageColor, ImageDraw
 def get_coco_keypoints():
     # From: https://github.com/facebookresearch/Detectron/blob/main/detectron/utils/keypoints.py
     keypoints = [
-        'nose',
-        'left_eye',
-        'right_eye',
-        'left_ear',
-        'right_ear',
-        'left_shoulder',
-        'right_shoulder',
-        'left_elbow',
-        'right_elbow',
-        'left_wrist',
-        'right_wrist',
-        'left_hip',
-        'right_hip',
-        'left_knee',
-        'right_knee',
-        'left_ankle',
-        'right_ankle'
+        "nose",
+        "left_eye",
+        "right_eye",
+        "left_ear",
+        "right_ear",
+        "left_shoulder",
+        "right_shoulder",
+        "left_elbow",
+        "right_elbow",
+        "left_wrist",
+        "right_wrist",
+        "left_hip",
+        "right_hip",
+        "left_knee",
+        "right_knee",
+        "left_ankle",
+        "right_ankle",
     ]
     keypoint_flip_map = {
-        'left_eye': 'right_eye',
-        'left_ear': 'right_ear',
-        'left_shoulder': 'right_shoulder',
-        'left_elbow': 'right_elbow',
-        'left_wrist': 'right_wrist',
-        'left_hip': 'right_hip',
-        'left_knee': 'right_knee',
-        'left_ankle': 'right_ankle'
+        "left_eye": "right_eye",
+        "left_ear": "right_ear",
+        "left_shoulder": "right_shoulder",
+        "left_elbow": "right_elbow",
+        "left_wrist": "right_wrist",
+        "left_hip": "right_hip",
+        "left_knee": "right_knee",
+        "left_ankle": "right_ankle",
     }
     connectivity = {
         "nose": "left_eye",
@@ -61,18 +59,15 @@ def get_coco_keypoints():
         "left_knee": "left_hip",
         "right_knee": "right_hip",
         "left_ankle": "left_knee",
-        "right_ankle": "right_knee"
+        "right_ankle": "right_knee",
     }
-    connectivity_indices = [
-        (sidx, keypoints.index(connectivity[kp]))
-        for sidx, kp in enumerate(keypoints)
-    ]
+    connectivity_indices = [(sidx, keypoints.index(connectivity[kp])) for sidx, kp in enumerate(keypoints)]
     return keypoints, keypoint_flip_map, connectivity_indices
 
 
 def get_coco_colors():
     return [
-        *["red"]*5,
+        *["red"] * 5,
         "blue",
         "green",
         "blue",
@@ -160,7 +155,9 @@ def draw_keypoints(
             for connection in connectivity:
                 if connection[1] >= len(kpt_inst) or connection[0] >= len(kpt_inst):
                     continue
-                if visible is not None and (int(visible[inst_id][connection[1]]) == 0 or int(visible[inst_id][connection[0]]) == 0):
+                if visible is not None and (
+                    int(visible[inst_id][connection[1]]) == 0 or int(visible[inst_id][connection[0]]) == 0
+                ):
                     continue
 
                 start_pt_x = kpt_inst[connection[0]][0]
@@ -169,10 +166,7 @@ def draw_keypoints(
                 end_pt_x = kpt_inst[connection[1]][0]
                 end_pt_y = kpt_inst[connection[1]][1]
 
-                draw.line(
-                    ((start_pt_x, start_pt_y), (end_pt_x, end_pt_y)),
-                    width=width, fill=colors[connection[1]]
-                )
+                draw.line(((start_pt_x, start_pt_y), (end_pt_x, end_pt_y)), width=width, fill=colors[connection[1]])
 
     return torch.from_numpy(np.array(img_to_draw)).permute(2, 0, 1).to(dtype=torch.uint8)
 
@@ -189,21 +183,27 @@ def visualize_keypoints(img, keypoints):
         visible = keypoints[:, :, 2] > 0
     for idx in range(img.shape[0]):
         img[idx] = draw_keypoints(
-            img[idx], keypoints[idx:idx+1].long(), colors="red",
-            connectivity=connectivity, visible=visible[idx:idx+1])
+            img[idx],
+            keypoints[idx : idx + 1].long(),
+            colors="red",
+            connectivity=connectivity,
+            visible=visible[idx : idx + 1],
+        )
     return img
 
 
 def visualize_batch(
-        img: torch.Tensor, mask: torch.Tensor,
-        vertices: torch.Tensor = None,
-        E_mask: torch.Tensor = None,
-        embed_map: torch.Tensor = None,
-        semantic_mask: torch.Tensor = None,
-        embedding: torch.Tensor = None,
-        keypoints: torch.Tensor = None,
-        maskrcnn_mask: torch.Tensor = None,
-        **kwargs) -> torch.ByteTensor:
+    img: torch.Tensor,
+    mask: torch.Tensor,
+    vertices: torch.Tensor = None,
+    E_mask: torch.Tensor = None,
+    embed_map: torch.Tensor = None,
+    semantic_mask: torch.Tensor = None,
+    embedding: torch.Tensor = None,
+    keypoints: torch.Tensor = None,
+    maskrcnn_mask: torch.Tensor = None,
+    **kwargs,
+) -> torch.ByteTensor:
     img = denormalize_img(img).mul(255).round().clamp(0, 255).byte()
     img = draw_mask(img, mask)
     if maskrcnn_mask is not None and maskrcnn_mask.shape == mask.shape:
@@ -211,9 +211,7 @@ def visualize_batch(
     if vertices is not None or embedding is not None:
         assert E_mask is not None
         assert embed_map is not None
-        img, E_mask, embedding, embed_map, vertices = tops.to_cpu([
-            img, E_mask, embedding, embed_map, vertices
-        ])
+        img, E_mask, embedding, embed_map, vertices = tops.to_cpu([img, E_mask, embedding, embed_map, vertices])
         img = draw_cse(img, E_mask, embedding, embed_map, vertices)
     elif semantic_mask is not None:
         img = draw_segmentation_masks(img, semantic_mask)
@@ -224,13 +222,15 @@ def visualize_batch(
 
 @torch.no_grad()
 def draw_cse(
-        img: torch.Tensor, E_seg: torch.Tensor,
-        embedding: torch.Tensor = None,
-        embed_map: torch.Tensor = None,
-        vertices: torch.Tensor = None, t=0.7
+    img: torch.Tensor,
+    E_seg: torch.Tensor,
+    embedding: torch.Tensor = None,
+    embed_map: torch.Tensor = None,
+    vertices: torch.Tensor = None,
+    t=0.7,
 ):
     """
-        E_seg: 1 for areas with embedding
+    E_seg: 1 for areas with embedding
     """
     assert img.dtype == torch.uint8
     img = img.view(-1, *img.shape[-3:])
@@ -240,17 +240,21 @@ def draw_cse(
         assert embed_map is not None
         embedding = embedding.view(-1, *embedding.shape[-3:])
         vertices = torch.stack(
-            [from_E_to_vertex(e[None], e_seg[None].logical_not().float(), embed_map)
-             for e, e_seg in zip(embedding, E_seg)])
+            [
+                from_E_to_vertex(e[None], e_seg[None].logical_not().float(), embed_map)
+                for e, e_seg in zip(embedding, E_seg)
+            ]
+        )
 
     i = np.arange(0, 256, dtype=np.uint8).reshape(1, -1)
     colormap_JET = torch.from_numpy(cv2.applyColorMap(i, cv2.COLORMAP_JET)[0])
-    color_embed_map, _ = np.load(download_file(
-        "https://dl.fbaipublicfiles.com/densepose/data/cse/mds_d=256.npy"), allow_pickle=True)
+    color_embed_map, _ = np.load(
+        download_file("https://dl.fbaipublicfiles.com/densepose/data/cse/mds_d=256.npy"), allow_pickle=True
+    )
     color_embed_map = torch.from_numpy(color_embed_map).float()[:, 0]
     color_embed_map -= color_embed_map.min()
     color_embed_map /= color_embed_map.max()
-    vertx2idx = (color_embed_map*255).long()
+    vertx2idx = (color_embed_map * 255).long()
     vertx2colormap = colormap_JET[vertx2idx]
 
     vertices = vertices.view(-1, *vertices.shape[-2:])
@@ -260,18 +264,23 @@ def draw_cse(
     E_color = vertx2colormap[vertices.long()]
     E_color = E_color.to(E_seg.device)
     E_color = E_color.permute(0, 3, 1, 2)
-    E_color = E_color*E_seg.byte()
+    E_color = E_color * E_seg.byte()
 
     m = E_seg.bool().repeat(1, 3, 1, 1)
-    img[m] = (img[m] * (1-t) + t * E_color[m]).byte()
+    img[m] = (img[m] * (1 - t) + t * E_color[m]).byte()
     return img
 
 
 def draw_cse_all(
-        embedding: List[torch.Tensor], E_mask: List[torch.Tensor],
-        im: torch.Tensor, boxes_XYXY: list, embed_map: torch.Tensor, t=0.7):
+    embedding: List[torch.Tensor],
+    E_mask: List[torch.Tensor],
+    im: torch.Tensor,
+    boxes_XYXY: list,
+    embed_map: torch.Tensor,
+    t=0.7,
+):
     """
-        E_seg: 1 for areas with embedding
+    E_seg: 1 for areas with embedding
     """
     assert len(im.shape) == 3, im.shape
     assert im.dtype == torch.uint8
@@ -285,9 +294,9 @@ def draw_cse_all(
         assert len(boxes_XYXY[i]) == 4
         E = embedding[i]
         x0, y0, x1, y1 = boxes_XYXY[i]
-        E = F.resize(E, (y1-y0, x1-x0), antialias=True)
+        E = F.resize(E, (y1 - y0, x1 - x0), antialias=True)
         s = E_mask[i].float()
-        s = (F.resize(s.squeeze()[None], (y1-y0, x1-x0), antialias=True) > 0).float()
+        s = (F.resize(s.squeeze()[None], (y1 - y0, x1 - x0), antialias=True) > 0).float()
         box = boxes_XYXY[i]
 
         im_ = crop_box(im, box)
@@ -296,7 +305,7 @@ def draw_cse_all(
         E_color = draw_cse(img=im_, E_seg=s[None], embedding=E[None], embed_map=embed_map)[0]
         E_color = E_color.to(im.device)
         s = s.bool().repeat(3, 1, 1)
-        crop_box(im, box)[s] = (im_[s] * (1-t) + t * E_color[s]).byte()
+        crop_box(im, box)[s] = (im_[s] * (1 - t) + t * E_color[s]).byte()
     return im
 
 
@@ -377,9 +386,9 @@ def draw_segmentation_masks(
 
 def draw_mask(im: torch.Tensor, mask: torch.Tensor, t=0.2, color=(255, 255, 255), visualize_instances=True):
     """
-        Visualize mask where mask = 0.
-        Supports multiple instances.
-        mask shape: [N, C, H, W], where C is different instances in same image.
+    Visualize mask where mask = 0.
+    Supports multiple instances.
+    mask shape: [N, C, H, W], where C is different instances in same image.
     """
     orig_imshape = im.shape
     if mask.numel() == 0:
@@ -400,7 +409,7 @@ def draw_mask(im: torch.Tensor, mask: torch.Tensor, t=0.2, color=(255, 255, 255)
     mask = (mask == 0).any(dim=1, keepdim=True).repeat(1, 3, 1, 1)
     color = torch.tensor(color).to(im.device).byte().view(1, 3, 1, 1)  # .repeat(1, *im.shape[1:])
     color = color.repeat(im.shape[0], 1, *im.shape[-2:])
-    im[mask] = (im[mask] * (1-t) + t * color[mask]).byte()
+    im[mask] = (im[mask] * (1 - t) + t * color[mask]).byte()
     im[outer_border] = 255
     im[inner_border] = 0
     return im.view(*orig_imshape)
@@ -409,7 +418,7 @@ def draw_mask(im: torch.Tensor, mask: torch.Tensor, t=0.2, color=(255, 255, 255)
 def draw_cropped_masks(im: torch.Tensor, mask: torch.Tensor, boxes: torch.Tensor, **kwargs):
     for i, box in enumerate(boxes):
         x0, y0, x1, y1 = boxes[i]
-        orig_shape = (y1-y0, x1-x0)
+        orig_shape = (y1 - y0, x1 - x0)
         m = F.resize(mask[i], orig_shape, F.InterpolationMode.NEAREST).squeeze()[None]
         m = remove_pad(m, boxes[i], im.shape[-2:])
         crop_box(im, boxes[i]).set_(draw_mask(crop_box(im, boxes[i]), m))
@@ -423,18 +432,19 @@ def draw_cropped_keypoints(im: torch.Tensor, all_keypoints: torch.Tensor, boxes:
     for i, box in enumerate(boxes):
 
         x0, y0, x1, y1 = boxes[i]
-        orig_shape = (y1-y0, x1-x0)
+        orig_shape = (y1 - y0, x1 - x0)
         keypoints = all_keypoints[i].clone()
         keypoints[:, 0] *= orig_shape[1]
         keypoints[:, 1] *= orig_shape[0]
         keypoints = keypoints.long()
         _, _, connectivity = get_coco_keypoints()
         connectivity = np.array(connectivity)
-        visible = (keypoints[:, 2] > .5)
+        visible = keypoints[:, 2] > 0.5
         # Remove padding from keypoints before visualization
         keypoints[:, 0] += min(x0, 0)
         keypoints[:, 1] += min(y0, 0)
         im_with_kp = draw_keypoints(
-            crop_box(im, box), keypoints[None], colors="red", connectivity=connectivity, visible=visible[None])
+            crop_box(im, box), keypoints[None], colors="red", connectivity=connectivity, visible=visible[None]
+        )
         crop_box(im, box).copy_(im_with_kp)
     return im

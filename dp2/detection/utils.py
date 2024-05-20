@@ -15,7 +15,7 @@ def get_kernel(n: int):
 
 def transform_embedding(E: torch.Tensor, S: torch.Tensor, exp_bbox, E_bbox, target_imshape):
     """
-        Transforms the detected embedding/mask directly to the target image shape
+    Transforms the detected embedding/mask directly to the target image shape
     """
 
     C, HE, WE = E.shape
@@ -33,16 +33,16 @@ def transform_embedding(E: torch.Tensor, S: torch.Tensor, exp_bbox, E_bbox, targ
     new_E = torch.zeros((C, *target_imshape), device=E.device, dtype=torch.float32)
     new_S = torch.zeros((target_imshape), device=S.device, dtype=torch.bool)
 
-    E = resize(E, (y1-y0, x1-x0), antialias=True, interpolation=InterpolationMode.BILINEAR)
+    E = resize(E, (y1 - y0, x1 - x0), antialias=True, interpolation=InterpolationMode.BILINEAR)
     new_E[:, y0:y1, x0:x1] = E
-    S = resize(S[None].float(), (y1-y0, x1-x0), antialias=True, interpolation=InterpolationMode.BILINEAR)[0] > 0
+    S = resize(S[None].float(), (y1 - y0, x1 - x0), antialias=True, interpolation=InterpolationMode.BILINEAR)[0] > 0
     new_S[y0:y1, x0:x1] = S
     return new_E, new_S
 
 
 def pairwise_mask_iou(mask1: torch.Tensor, mask2: torch.Tensor):
     """
-        mask: shape [N, H, W]
+    mask: shape [N, H, W]
     """
     assert len(mask1.shape) == 3
     assert len(mask2.shape) == 3
@@ -54,7 +54,7 @@ def pairwise_mask_iou(mask1: torch.Tensor, mask2: torch.Tensor):
     N2, H2, W2 = mask2.shape
     iou = torch.zeros((N1, N2), dtype=torch.float32)
     for i in range(N1):
-        cur = mask1[i:i+1]
+        cur = mask1[i : i + 1]
         inter = torch.logical_and(cur, mask2).flatten(start_dim=1).float().sum(dim=1).cpu()
         union = torch.logical_or(cur, mask2).flatten(start_dim=1).float().sum(dim=1).cpu()
         iou[i] = inter / union
@@ -103,22 +103,25 @@ def combine_cse_maskrcnn_dets(segmentation: torch.Tensor, cse_dets: dict, iou_th
 
 def initialize_cse_boxes(segmentation: torch.Tensor, cse_boxes: torch.Tensor):
     """
-        cse_boxes can be outside of segmentation.
+    cse_boxes can be outside of segmentation.
     """
     boxes = masks_to_boxes(segmentation)
 
     assert boxes.shape == cse_boxes.shape, (boxes.shape, cse_boxes.shape)
     combined = torch.stack((boxes, cse_boxes), dim=-1)
-    boxes = torch.cat((
-        combined[:, :2].min(dim=2).values,
-        combined[:, 2:].max(dim=2).values,
-    ), dim=1)
+    boxes = torch.cat(
+        (
+            combined[:, :2].min(dim=2).values,
+            combined[:, 2:].max(dim=2).values,
+        ),
+        dim=1,
+    )
     return boxes
 
 
 def cut_pad_resize(x: torch.Tensor, bbox, target_shape, fdf_resize=False):
     """
-        Crops or pads x to fit in the bbox and resize to target shape.
+    Crops or pads x to fit in the bbox and resize to target shape.
     """
     C, H, W = x.shape
     x0, y0, x1, y1 = bbox
@@ -126,11 +129,11 @@ def cut_pad_resize(x: torch.Tensor, bbox, target_shape, fdf_resize=False):
     if y0 > 0 and x0 > 0 and x1 <= W and y1 <= H:
         new_x = x[:, y0:y1, x0:x1]
     else:
-        new_x = torch.zeros(((C, y1-y0, x1-x0)), dtype=x.dtype, device=x.device)
+        new_x = torch.zeros(((C, y1 - y0, x1 - x0)), dtype=x.dtype, device=x.device)
         y0_t = max(0, -y0)
-        y1_t = min(y1-y0, (y1-y0)-(y1-H))
+        y1_t = min(y1 - y0, (y1 - y0) - (y1 - H))
         x0_t = max(0, -x0)
-        x1_t = min(x1-x0, (x1-x0)-(x1-W))
+        x1_t = min(x1 - x0, (x1 - x0) - (x1 - W))
         x0 = max(0, x0)
         y0 = max(0, y0)
         x1 = min(x1, W)
@@ -138,7 +141,7 @@ def cut_pad_resize(x: torch.Tensor, bbox, target_shape, fdf_resize=False):
         new_x[:, y0_t:y1_t, x0_t:x1_t] = x[:, y0:y1, x0:x1]
     # Nearest upsampling often generates more sharp synthesized identities.
     interp = InterpolationMode.BICUBIC
-    if (y1-y0) < target_shape[0] and (x1-x0) < target_shape[1]:
+    if (y1 - y0) < target_shape[0] and (x1 - x0) < target_shape[1]:
         interp = InterpolationMode.NEAREST
     antialias = interp == InterpolationMode.BICUBIC
     if x1 - x0 == target_shape[1] and y1 - y0 == target_shape[0]:
@@ -150,18 +153,26 @@ def cut_pad_resize(x: torch.Tensor, bbox, target_shape, fdf_resize=False):
     elif x.dtype == torch.uint8:
         if fdf_resize:  # FDF dataset is created with cv2 INTER_AREA.
             # Incorrect resizing generates noticeable poorer inpaintings.
-            upsampling = ((y1-y0) * (x1-x0)) < (target_shape[0] * target_shape[1])
+            upsampling = ((y1 - y0) * (x1 - x0)) < (target_shape[0] * target_shape[1])
             if upsampling:
-                new_x = resize(new_x.float(), target_shape, interpolation=InterpolationMode.BICUBIC,
-                               antialias=True).round().clamp(0, 255).byte()
+                new_x = (
+                    resize(new_x.float(), target_shape, interpolation=InterpolationMode.BICUBIC, antialias=True)
+                    .round()
+                    .clamp(0, 255)
+                    .byte()
+                )
             else:
                 device = new_x.device
                 new_x = new_x.permute(1, 2, 0).cpu().numpy()
                 new_x = cv2.resize(new_x, target_shape[::-1], interpolation=cv2.INTER_AREA)
                 new_x = torch.from_numpy(np.rollaxis(new_x, 2)).to(device)
         else:
-            new_x = resize(new_x.float(), target_shape, interpolation=interp,
-                           antialias=antialias).round().clamp(0, 255).byte()
+            new_x = (
+                resize(new_x.float(), target_shape, interpolation=interp, antialias=antialias)
+                .round()
+                .clamp(0, 255)
+                .byte()
+            )
     else:
         raise ValueError(f"Not supported dtype: {x.dtype}")
     return new_x

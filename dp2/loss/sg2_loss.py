@@ -11,15 +11,15 @@ from .pl_regularization import PLRegularization
 class StyleGAN2Loss:
 
     def __init__(
-            self,
-            D,
-            G,
-            r1_opts: dict,
-            EP_lambd: float,
-            lazy_reg_interval: int,
-            lazy_regularization: bool,
-            pl_reg_opts: dict,
-        ) -> None:
+        self,
+        D,
+        G,
+        r1_opts: dict,
+        EP_lambd: float,
+        lazy_reg_interval: int,
+        lazy_regularization: bool,
+        pl_reg_opts: dict,
+    ) -> None:
         self.gradient_step_D = 0
         self._lazy_reg_interval = lazy_reg_interval
         self.D = D
@@ -27,8 +27,8 @@ class StyleGAN2Loss:
         self.EP_lambd = EP_lambd
         self.lazy_regularization = lazy_regularization
         self.r1_reg = functools.partial(
-            r1_regularization, **r1_opts, lazy_reg_interval=lazy_reg_interval,
-            lazy_regularization=lazy_regularization)
+            r1_regularization, **r1_opts, lazy_reg_interval=lazy_reg_interval, lazy_regularization=lazy_regularization
+        )
         self.do_PL_Reg = False
         if pl_reg_opts.weight > 0:
             self.pl_reg = PLRegularization(**pl_reg_opts)
@@ -50,7 +50,7 @@ class StyleGAN2Loss:
 
             # Non saturating loss
             nsgan_loss = nsgan_d_loss(D_out_real["score"], D_out_fake["score"])
-            tops.assert_shape(nsgan_loss, (batch["img"].shape[0], ))
+            tops.assert_shape(nsgan_loss, (batch["img"].shape[0],))
             to_log["d_loss"] = nsgan_loss.mean()
             total_loss = nsgan_loss
             epsilon_penalty = D_out_real["score"].pow(2).view(-1)
@@ -62,7 +62,8 @@ class StyleGAN2Loss:
         # Gradient penalty applies specialized autocast.
         if do_GP:
             gradient_pen, grad_unscaled = self.r1_reg(
-                batch["img"], D_out_real["score"], batch["mask"], scaler=grad_scaler)
+                batch["img"], D_out_real["score"], batch["mask"], scaler=grad_scaler
+            )
             to_log["r1_gradient_penalty"] = grad_unscaled.mean()
             tops.assert_shape(gradient_pen, total_loss.shape)
             total_loss = total_loss + gradient_pen
@@ -86,7 +87,7 @@ class StyleGAN2Loss:
             # Adversarial Loss
             total_loss = nsgan_g_loss(D_out_fake["score"]).view(-1)
             to_log["g_loss"] = total_loss.mean()
-            tops.assert_shape(total_loss, (batch["img"].shape[0], ))
+            tops.assert_shape(total_loss, (batch["img"].shape[0],))
 
         if self.do_PL_Reg and logger.global_step() >= self.pl_start_nimg:
             pl_reg, to_log_ = self.pl_reg(self.G, batch, grad_scaler=grad_scaler)

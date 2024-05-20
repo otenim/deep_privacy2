@@ -8,7 +8,7 @@ from tops import logger
 def blur(im, init_sigma, t, batch, **kwargs):
     batch = {k: v for k, v in batch.items()}
     sigma = max(t, 0) * init_sigma
-    blur_size = int(np.round(sigma*3))
+    blur_size = int(np.round(sigma * 3))
     if blur_size == 0:
         return im
     blur_f = torch.arange(-blur_size, blur_size + 1, device=im.device).div(sigma).square().neg().exp2()
@@ -20,13 +20,13 @@ def blur(im, init_sigma, t, batch, **kwargs):
 class ProjectedGANLoss:
 
     def __init__(
-            self,
-            D,
-            G,
-            aug_fade_kimg,
-            blur_init_sigma,
-            loss_type="hinge",
-        ) -> None:
+        self,
+        D,
+        G,
+        aug_fade_kimg,
+        blur_init_sigma,
+        loss_type="hinge",
+    ) -> None:
         self.D = D
         self.G = G
         self.aug_fade_kimg = aug_fade_kimg
@@ -60,7 +60,7 @@ class ProjectedGANLoss:
                 real_loss = sum([(torch.ones_like(l) - l).relu().mean() for l in real_logits])
 
             if self.loss_type == "masked-hinge":
-                real_loss, fake_loss, to_log_hinge = masked_hinge_D_loss(fake_logits,  real_logits, batch["mask"])
+                real_loss, fake_loss, to_log_hinge = masked_hinge_D_loss(fake_logits, real_logits, batch["mask"])
                 # Reshape for logging
                 fake_logits = [torch.cat([l.flatten(start_dim=1) for l in logits], dim=1) for logits in fake_logits]
                 real_logits = [torch.cat([l.flatten(start_dim=1) for l in logits], dim=1) for logits in real_logits]
@@ -75,7 +75,7 @@ class ProjectedGANLoss:
             real_loss=real_loss.mean(),
             fake_loss=fake_loss.mean(),
             fake_logits_sign=fake_logits.sign().mean(),
-            real_logits_sign=real_logits.sign().mean()
+            real_logits_sign=real_logits.sign().mean(),
         )
         if self.loss_type == "masked-hinge":
             to_log.update(to_log_hinge)
@@ -102,22 +102,26 @@ def masked_hinge_D_loss(fake_logits, real_logits, mask):
     fake_logits_fake_sign = 0
     for r_logits, f_logits in zip(real_logits, fake_logits):
         resized_fake_pixels = [
-            torch.nn.functional.adaptive_max_pool2d(1 - mask, output_size=l.shape[-2:])
-            for l in f_logits
+            torch.nn.functional.adaptive_max_pool2d(1 - mask, output_size=l.shape[-2:]) for l in f_logits
         ]
         N_fake_pixels = sum([l.sum() for l in resized_fake_pixels])
         N_real_pixels = sum([np.prod(l.shape) for l in f_logits]) - N_fake_pixels
 
         for rl, fl, fake_pixels in zip(r_logits, f_logits, resized_fake_pixels):
             real_pixels = 1 - fake_pixels
-            fake_loss = fake_loss + ((torch.ones_like(fl) + fl)*fake_pixels).relu().sum() / N_fake_pixels
+            fake_loss = fake_loss + ((torch.ones_like(fl) + fl) * fake_pixels).relu().sum() / N_fake_pixels
 
-            real_loss = real_loss + ((torch.ones_like(fl) - fl)*real_pixels).relu().sum() / N_real_pixels / 2
-            real_loss = real_loss + ((torch.ones_like(fl) - rl)*real_pixels).relu().sum() / N_real_pixels / 2
-            real_loss = real_loss + ((torch.ones_like(fl) - rl)*fake_pixels).relu().sum() / N_real_pixels
-            fake_logits_real_sign += ((real_pixels * fl).sign().sum() / real_pixels.sum()).detach() / len(r_logits) / len(fake_logits)
-            fake_logits_fake_sign += ((fake_pixels * fl).sign().sum() / fake_pixels.sum()).detach() / len(r_logits) / len(fake_logits)
-    return real_loss, fake_loss, dict(
-        fake_logits_real_sign=fake_logits_real_sign,
-        fake_logits_fake_sign=fake_logits_fake_sign
+            real_loss = real_loss + ((torch.ones_like(fl) - fl) * real_pixels).relu().sum() / N_real_pixels / 2
+            real_loss = real_loss + ((torch.ones_like(fl) - rl) * real_pixels).relu().sum() / N_real_pixels / 2
+            real_loss = real_loss + ((torch.ones_like(fl) - rl) * fake_pixels).relu().sum() / N_real_pixels
+            fake_logits_real_sign += (
+                ((real_pixels * fl).sign().sum() / real_pixels.sum()).detach() / len(r_logits) / len(fake_logits)
+            )
+            fake_logits_fake_sign += (
+                ((fake_pixels * fl).sign().sum() / fake_pixels.sum()).detach() / len(r_logits) / len(fake_logits)
+            )
+    return (
+        real_loss,
+        fake_loss,
+        dict(fake_logits_real_sign=fake_logits_real_sign, fake_logits_fake_sign=fake_logits_fake_sign),
     )

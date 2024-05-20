@@ -12,7 +12,7 @@ class FeatureFusionBlock(nn.Module):
         self.expand = expand
         out_features = features
         if self.expand:
-            out_features = features//2
+            out_features = features // 2
 
         self.out_conv = nn.Conv2d(features, out_features, kernel_size=1)
         self.skip_add = nn.quantized.FloatFunctional()
@@ -21,8 +21,7 @@ class FeatureFusionBlock(nn.Module):
         output = x0
         if x1 is not None:
             output = self.skip_add.add(output, x1)
-        output = nn.functional.interpolate(
-            output, scale_factor=2., mode="bilinear", align_corners=True)
+        output = nn.functional.interpolate(output, scale_factor=2.0, mode="bilinear", align_corners=True)
         return self.out_conv(output)
 
 
@@ -32,12 +31,12 @@ class ProjectorCSM(nn.Module):
         assert proj_type in [0, 1, 2], "Invalid projection type"
         im_res = 256
         tmp = torch.zeros(1, 3, im_res, im_res)
-        self.RESOLUTIONS = [im_res//4, im_res//8, im_res//16, im_res//32]
+        self.RESOLUTIONS = [im_res // 4, im_res // 8, im_res // 16, im_res // 32]
         in_channels = [out.shape[1] for out in pretrained(tmp)]
         self.CHANNELS = in_channels
         if proj_type == 0:
             return
-        out_channels = [cout, cout*2, cout*4, cout*8]
+        out_channels = [cout, cout * 2, cout * 4, cout * 8]
         self.layer0_ccm = nn.Conv2d(in_channels[0], out_channels[0], kernel_size=1)
         self.layer1_ccm = nn.Conv2d(in_channels[1], out_channels[1], kernel_size=1)
         self.layer2_ccm = nn.Conv2d(in_channels[2], out_channels[2], kernel_size=1)
@@ -49,11 +48,11 @@ class ProjectorCSM(nn.Module):
         # build CSM
         self.layer3_csm = FeatureFusionBlock(out_channels[3], expand=True)
         self.layer2_csm = FeatureFusionBlock(out_channels[2], expand=True)
-        self.layer1_csm = FeatureFusionBlock(out_channels[1],  expand=True)
+        self.layer1_csm = FeatureFusionBlock(out_channels[1], expand=True)
         self.layer0_csm = FeatureFusionBlock(out_channels[0], expand=False)
-        self.CHANNELS = [cout, cout, cout*2, cout*4]
+        self.CHANNELS = [cout, cout, cout * 2, cout * 4]
         # CSM upsamples x2 so the feature map resolution doubles
-        self.RESOLUTIONS = [res*2 for res in self.RESOLUTIONS]
+        self.RESOLUTIONS = [res * 2 for res in self.RESOLUTIONS]
         self.proj_type = proj_type
 
     def forward(self, x: List[torch.Tensor]) -> List[torch.Tensor]:
@@ -85,7 +84,7 @@ class F_RandomProj(nn.Module):
         std=None,
         cout=64,
         proj_type=2,  # 0 = no projection, 1 = cross channel mixing, 2 = cross scale mixing
-        eval_mode=True
+        eval_mode=True,
     ):
         super().__init__()
         self.pretrained = instantiate(backbone_cfg)

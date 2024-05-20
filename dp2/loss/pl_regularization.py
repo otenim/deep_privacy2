@@ -33,7 +33,8 @@ class PLRegularization:
                 inputs=[gen_ws],
                 create_graph=True,
                 grad_outputs=torch.ones_like(gen_img),
-                only_inputs=True)[0]
+                only_inputs=True,
+            )[0]
 
         pl_grads = pl_grads.float() / grad_scaler.get_scale()
         if self.scale_by_mask:

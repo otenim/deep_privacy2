@@ -3,10 +3,13 @@ import cv2
 import json
 from detectron2.data.datasets.cityscapes import load_cityscapes_instances
 from .annotate_faces import iterate_dataset, ddir
+
+
 def draw_faces(im, bboxes):
     for bbox in bboxes:
         x0, y0, x1, y1 = [int(_) for _ in bbox]
         cv2.rectangle(im, (x0, y0), (x1, y1), (0, 0, 255), 2)
+
 
 if __name__ == "__main__":
     target_path = ddir.joinpath("face_boxes_train.json")

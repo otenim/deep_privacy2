@@ -9,6 +9,7 @@ from .lpips import SampleSimilarityLPIPS
 from torch_fidelity.defaults import DEFAULTS as trf_defaults
 from torch_fidelity.metric_fid import fid_features_to_statistics, fid_statistics_to_metric
 from torch_fidelity.utils import create_feature_extractor
+
 lpips_model = None
 fid_model = None
 
@@ -46,11 +47,12 @@ def _lpips_w_grad(images1: torch.Tensor, images2: torch.Tensor) -> torch.Tensor:
 
 @torch.no_grad()
 def compute_metrics_iteratively(
-        dataloader, generator,
-        cache_directory,
-        data_len=None,
-        truncation_value: float = None,
-        multi_modal_truncate=False,
+    dataloader,
+    generator,
+    cache_directory,
+    data_len=None,
+    truncation_value: float = None,
+    multi_modal_truncate=False,
 ) -> dict:
     """
     Args:
@@ -63,7 +65,8 @@ def compute_metrics_iteratively(
         lpips_model = tops.to_cuda(SampleSimilarityLPIPS())
     if fid_model is None:
         fid_model = create_feature_extractor(
-            trf_defaults["feature_extractor"], [trf_defaults["feature_layer_fid"]], cuda=False)
+            trf_defaults["feature_extractor"], [trf_defaults["feature_layer_fid"]], cuda=False
+        )
         fid_model = tops.to_cuda(fid_model)
     cache_directory = Path(cache_directory)
     start_time = time.time()
@@ -72,7 +75,7 @@ def compute_metrics_iteratively(
     fid_cache_path = cache_directory.joinpath("fid_stats.pkl")
     has_fid_cache = fid_cache_path.is_file()
     if data_len is None:
-        data_len = len(dataloader)*dataloader.batch_size
+        data_len = len(dataloader) * dataloader.batch_size
     if not has_fid_cache:
         fid_features_real = torch.zeros(data_len, 2048, dtype=torch.float32, device=tops.get_device())
     fid_features_fake = torch.zeros(data_len, 2048, dtype=torch.float32, device=tops.get_device())
@@ -135,10 +138,11 @@ def compute_metrics_iteratively(
 
 @torch.no_grad()
 def compute_lpips(
-        dataloader, generator,
-        truncation_value: float = None,
-        data_len=None,
-    ) -> dict:
+    dataloader,
+    generator,
+    truncation_value: float = None,
+    data_len=None,
+) -> dict:
     """
     Args:
         n_samples (int): Creates N samples from same image to calculate stats

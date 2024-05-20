@@ -27,14 +27,14 @@ def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
 class CSeMaskFaceDetector(BaseDetector):
 
     def __init__(
-            self,
-            mask_rcnn_cfg,
-            face_detector_cfg: dict,
-            cse_cfg: dict,
-            face_post_process_cfg: dict,
-            cse_post_process_cfg,
-            score_threshold: float,
-            **kwargs
+        self,
+        mask_rcnn_cfg,
+        face_detector_cfg: dict,
+        cse_cfg: dict,
+        face_post_process_cfg: dict,
+        cse_post_process_cfg,
+        score_threshold: float,
+        **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self.mask_rcnn = MaskRCNNDetector(**mask_rcnn_cfg, score_thres=score_threshold)
@@ -62,18 +62,17 @@ class CSeMaskFaceDetector(BaseDetector):
         return boxes_XYXY.round().long()
 
     def load_from_cache(self, cache_path: Path):
-        logger.log(f"Loading detection from cache path: {cache_path}",)
+        logger.log(
+            f"Loading detection from cache path: {cache_path}",
+        )
         with lzma.open(cache_path, "rb") as fp:
             state_dict = torch.load(fp, map_location="cpu")
         kwargs = dict(
             post_process_cfg=self.cse_post_process_cfg,
             embed_map=self.cse_detector.embed_map,
-            **self.face_post_process_cfg
+            **self.face_post_process_cfg,
         )
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor):
@@ -82,25 +81,20 @@ class CSeMaskFaceDetector(BaseDetector):
         embed_map = self.cse_detector.embed_map
         print("Calling face detector.")
         face_boxes = self._detect_faces(im).cpu()
-        maskrcnn_person = {
-            k: v[maskrcnn_dets["is_person"]] for k, v in maskrcnn_dets.items()
-        }
-        maskrcnn_other = {
-            k: v[maskrcnn_dets["is_person"].logical_not()] for k, v in maskrcnn_dets.items()
-        }
+        maskrcnn_person = {k: v[maskrcnn_dets["is_person"]] for k, v in maskrcnn_dets.items()}
+        maskrcnn_other = {k: v[maskrcnn_dets["is_person"].logical_not()] for k, v in maskrcnn_dets.items()}
         maskrcnn_other = VehicleDetection(maskrcnn_other["segmentation"])
         combined_segmentation, cse_dets, matches = combine_cse_maskrcnn_dets(
-            maskrcnn_person["segmentation"], cse_dets, self.mask_cse_iou_combine_threshold)
+            maskrcnn_person["segmentation"], cse_dets, self.mask_cse_iou_combine_threshold
+        )
 
         persons_with_cse = CSEPersonDetection(
-            combined_segmentation, cse_dets, **self.cse_post_process_cfg,
-            embed_map=embed_map, orig_imshape_CHW=im.shape
+            combined_segmentation, cse_dets, **self.cse_post_process_cfg, embed_map=embed_map, orig_imshape_CHW=im.shape
         )
         persons_with_cse.pre_process()
         not_matched = [i for i in range(maskrcnn_person["segmentation"].shape[0]) if i not in matches[:, 0]]
         persons_without_cse = PersonDetection(
-            maskrcnn_person["segmentation"][not_matched], **self.cse_post_process_cfg,
-            orig_imshape_CHW=im.shape
+            maskrcnn_person["segmentation"][not_matched], **self.cse_post_process_cfg, orig_imshape_CHW=im.shape
         )
         persons_without_cse.pre_process()
 

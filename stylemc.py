@@ -4,18 +4,21 @@ Original source code:
 https://github.com/autonomousvision/stylegan_xl/blob/f9be58e98110bd946fcdadef2aac8345466faaf3/run_stylemc.py#
 Modified by Håkon Hukkelås
 """
-import click
+
 from pathlib import Path
-import tqdm
-from dp2 import utils
-import tops
 from timeit import default_timer as timer
+
+import click
+import clip
+import tops
 import torch
 import torch.nn.functional as F
-from torchvision.transforms.functional import resize, normalize
-import clip
-from dp2.gan_trainer import AverageMeter
+import tqdm
 from tops.config import instantiate
+from torchvision.transforms.functional import normalize, resize
+
+from dp2 import utils
+from dp2.gan_trainer import AverageMeter
 from dp2.utils import vis_utils
 
 
@@ -47,6 +50,7 @@ def init_affine_modules(G, batch):
         global max_ch
         affine_modules.append(block)
         max_ch = max(max_ch, block.affine.out_features * (1 + hasattr(block, "affine_beta")))
+
     removable_handles = []
     for block in G.modules():
         if hasattr(block, "affine") and hasattr(block.affine, "weight"):
@@ -70,6 +74,7 @@ def get_stylesW(w):
         all_styles[i] = F.pad(gamma0, ((0, max_ch - gamma0.shape[-1])), "constant", 0)
 
     return all_styles
+
 
 @torch.no_grad()
 def get_styles(seed, G: torch.nn.Module, batch, truncation_value=1):
@@ -98,15 +103,10 @@ def get_and_cache_direction(output_dir: Path, dl_val, G, text_prompt):
     torch.save(direction, cache_path)
     return direction
 
+
 @torch.enable_grad()
 @torch.cuda.amp.autocast()
-def find_direction(
-    G,
-    text_prompt,
-    n_iterations=128 * 8 * 10,
-    batch_size=8,
-    dl_val=None
-):
+def find_direction(G, text_prompt, n_iterations=128 * 8 * 10, batch_size=8, dl_val=None):
     time_start = timer()
     clip_model = clip.load("ViT-B/16", device=tops.get_device())[0]
     target = [clip_model.encode_text(clip.tokenize(text_prompt).to(tops.get_device())).float()]
@@ -122,7 +122,7 @@ def find_direction(
     direction.requires_grad_()
     utils.set_requires_grad(G, False)
     direction_tracker = torch.zeros_like(direction)
-    opt = torch.optim.AdamW([direction], lr=0.05, betas=(0., 0.999), weight_decay=0.25)
+    opt = torch.optim.AdamW([direction], lr=0.05, betas=(0.0, 0.999), weight_decay=0.25)
 
     grads = []
     for seed_idx in tqdm.trange(n_iterations):
@@ -137,7 +137,11 @@ def find_direction(
 
         # clip loss
         img = (img + 1) / 2
-        img = normalize(img, mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
+        img = normalize(
+            img,
+            mean=(0.48145466, 0.4578275, 0.40821073),
+            std=(0.26862954, 0.26130258, 0.27577711),
+        )
         img = resize(img, (224, 224))
         embeds = clip_model.encode_image(img)
         cos_sim = prompts_dist_loss(embeds, target)
@@ -164,8 +168,10 @@ def find_direction(
 @click.argument("text_prompt")
 @click.option("-n", default=50, type=int)
 def main(config_path: str, text_prompt: str, n: int):
-    from dp2.infer import build_trained_generator
     from PIL import Image
+
+    from dp2.infer import build_trained_generator
+
     cfg = utils.load_config(config_path)
     G = build_trained_generator(cfg)
     cfg.train.batch_size = 1

@@ -9,10 +9,10 @@ def expand_bbox_to_ratio(bbox, imshape, target_aspect_ratio):
     if cur_ratio == target_aspect_ratio:
         return [x0, y0, x1, y1]
     if cur_ratio < target_aspect_ratio:
-        target_height = int(w*target_aspect_ratio)
+        target_height = int(w * target_aspect_ratio)
         y0, y1 = expand_axis(y0, y1, target_height, imshape[0])
     else:
-        target_width = int(h/target_aspect_ratio)
+        target_width = int(h / target_aspect_ratio)
         x0, x1 = expand_axis(x0, x1, target_width, imshape[1])
     return x0, y0, x1, y1
 
@@ -20,8 +20,8 @@ def expand_bbox_to_ratio(bbox, imshape, target_aspect_ratio):
 def expand_axis(start, end, target_width, limit):
     # Can return a bbox outside of limit
     cur_width = end - start
-    start = start - (target_width-cur_width)//2
-    end = end + (target_width-cur_width)//2
+    start = start - (target_width - cur_width) // 2
+    end = end + (target_width - cur_width) // 2
     if end - start != target_width:
         end += 1
     assert end - start == target_width
@@ -52,7 +52,7 @@ def expand_box(bbox, imshape, mask, percentage_background: float):
     x0, y0, x1, y1 = bbox
     H = y1 - y0
     W = x1 - x0
-    p = np.sqrt(target_pixels/(H*W))
+    p = np.sqrt(target_pixels / (H * W))
     target_width = int(np.ceil(p * W))
     target_height = int(np.ceil(p * H))
     x0, x1 = expand_axis(x0, x1, target_width, imshape[1])
@@ -64,7 +64,7 @@ def expand_axises_by_percentage(bbox_XYXY, imshape, percentage):
     x0, y0, x1, y1 = bbox_XYXY
     H = y1 - y0
     W = x1 - x0
-    expansion = int(((H*W)**0.5) * percentage)
+    expansion = int(((H * W) ** 0.5) * percentage)
     new_width = W + expansion
     new_height = H + expansion
     x0, x1 = expand_axis(x0, x1, min(new_width, imshape[1]), imshape[1])
@@ -73,12 +73,8 @@ def expand_axises_by_percentage(bbox_XYXY, imshape, percentage):
 
 
 def get_expanded_bbox(
-        bbox_XYXY,
-        imshape,
-        mask,
-        percentage_background: float,
-        axis_minimum_expansion: float,
-        target_aspect_ratio: float):
+    bbox_XYXY, imshape, mask, percentage_background: float, axis_minimum_expansion: float, target_aspect_ratio: float
+):
     bbox_XYXY = bbox_XYXY.long().cpu().numpy().tolist()
     # Expand each axis of the bounding box by a minimum percentage
     bbox_XYXY = expand_axises_by_percentage(bbox_XYXY, imshape, axis_minimum_expansion)
@@ -95,6 +91,7 @@ def include_box(bbox, minimum_area, aspect_ratio_range, min_bbox_ratio_inside, i
         area = (bbox[2] - bbox[0]) * (bbox[3] - bbox[1])
         area_inside = (min(bbox[2], imshape[1]) - max(0, bbox[0])) * (min(imshape[0], bbox[3]) - max(0, bbox[1]))
         return area_inside / area
+
     ratio = (bbox[3] - bbox[1]) / (bbox[2] - bbox[0])
     area = (bbox[3] - bbox[1]) * (bbox[2] - bbox[0])
     if area_inside_ratio(bbox, imshape) < min_bbox_ratio_inside:

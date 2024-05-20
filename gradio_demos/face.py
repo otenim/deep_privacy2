@@ -19,4 +19,3 @@ with gradio.Blocks() as demo:
         WebcamDemo(anonymizer_face)
 
 demo.launch()
-

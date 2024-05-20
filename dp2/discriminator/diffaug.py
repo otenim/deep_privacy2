@@ -46,7 +46,7 @@ def rand_contrast(img: torch.Tensor, condition: torch.Tensor) -> Tuple[torch.Ten
     return img, condition
 
 
-def rand_cutout(img: torch.Tensor, condition: torch.Tensor, ratio=.2) -> Tuple[torch.Tensor]:
+def rand_cutout(img: torch.Tensor, condition: torch.Tensor, ratio=0.2) -> Tuple[torch.Tensor]:
     cutout_size = int(img.size(2) * ratio + 0.5), int(img.size(3) * ratio + 0.5)
     offset_x = torch.randint(0, img.size(2) + (1 - cutout_size[0] % 2), size=[img.size(0), 1, 1], device=img.device)
     offset_y = torch.randint(0, img.size(3) + (1 - cutout_size[1] % 2), size=[img.size(0), 1, 1], device=img.device)
@@ -54,7 +54,8 @@ def rand_cutout(img: torch.Tensor, condition: torch.Tensor, ratio=.2) -> Tuple[t
         torch.arange(img.size(0), dtype=torch.long, device=img.device),
         torch.arange(cutout_size[0], dtype=torch.long, device=img.device),
         torch.arange(cutout_size[1], dtype=torch.long, device=img.device),
-        indexing="ij")
+        indexing="ij",
+    )
     grid_x = torch.clamp(grid_x + offset_x - cutout_size[0] // 2, min=0, max=img.size(2) - 1)
     grid_y = torch.clamp(grid_y + offset_y - cutout_size[1] // 2, min=0, max=img.size(3) - 1)
     mask = torch.ones(img.size(0), img.size(2), img.size(3), dtype=img.dtype, device=img.device)
@@ -68,7 +69,7 @@ def rand_cutout(img: torch.Tensor, condition: torch.Tensor, ratio=.2) -> Tuple[t
     return img, condition
 
 
-def rand_translation(img: torch.Tensor, condition: torch.Tensor, ratio=.2) -> Tuple[torch.Tensor]:
+def rand_translation(img: torch.Tensor, condition: torch.Tensor, ratio=0.2) -> Tuple[torch.Tensor]:
     xy_shift = (torch.rand(size=(2,)) * 2 - 1).tolist()
     xy_shift[0] *= img.shape[-1] * ratio
     xy_shift[1] *= img.shape[-2] * ratio
@@ -79,7 +80,7 @@ def rand_translation(img: torch.Tensor, condition: torch.Tensor, ratio=.2) -> Tu
 
 
 AUGMENT_FNS = {
-    'color': [rand_brightness, rand_saturation, rand_contrast],
-    'cutout': [rand_cutout],
+    "color": [rand_brightness, rand_saturation, rand_contrast],
+    "cutout": [rand_cutout],
     "translate": [rand_translation],
 }

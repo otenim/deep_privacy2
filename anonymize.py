@@ -1,18 +1,20 @@
-import cv2
-import torch
-import tops
-import tqdm
-import click
 import hashlib
-import numpy as np
-from dp2 import utils
-from PIL import Image
-from tops import logger
 from pathlib import Path
 from typing import Optional
+
+import click
+import cv2
 import moviepy.editor as mp
-from tops.config import instantiate
+import numpy as np
+import tops
+import torch
+import tqdm
 from detectron2.data.detection_utils import _apply_exif_orientation
+from PIL import Image
+from tops import logger
+from tops.config import instantiate
+
+from dp2 import utils
 from dp2.utils.bufferless_video_capture import BufferlessVideoCapture
 
 
@@ -212,12 +214,8 @@ def anonymize_webcam(
     type=click.Path(),
     help="Output path to save. Can be directory or file.",
 )
-@click.option(
-    "-v", "--visualize", default=False, is_flag=True, help="Visualize the result"
-)
-@click.option(
-    "--max-res", default=None, type=int, help="Maximum resolution  of height/wideo"
-)
+@click.option("-v", "--visualize", default=False, is_flag=True, help="Visualize the result")
+@click.option("--max-res", default=None, type=int, help="Maximum resolution  of height/wideo")
 @click.option(
     "--start-time",
     "--st",
@@ -279,9 +277,7 @@ def anonymize_webcam(
     is_flag=True,
     help="Track detections over frames. Will use the same latent variable (z) for tracked identities.",
 )
-@click.option(
-    "--seed", default=0, type=int, help="Set random seed for generating images."
-)
+@click.option("--seed", default=0, type=int, help="Set random seed for generating images.")
 @click.option(
     "--person-generator",
     default=None,
@@ -294,9 +290,7 @@ def anonymize_webcam(
     help="Config path to CSE-guided person generator",
     type=click.Path(),
 )
-@click.option(
-    "--webcam", default=False, is_flag=True, help="Read image from webcam feed."
-)
+@click.option("--webcam", default=False, is_flag=True, help="Read image from webcam feed.")
 @click.option(
     "--text-prompt",
     default=None,

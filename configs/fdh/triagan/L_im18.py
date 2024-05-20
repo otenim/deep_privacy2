@@ -4,7 +4,7 @@ from ...discriminators.projected_discriminator import (
     loss_fnc,
     discriminator,
     VIT_PATCH_MAE_LARGE,
-    RN50_CLIP
+    RN50_CLIP,
 )
 from ...defaults import common, EMA, train
 from dp2.data.utils import get_coco_keypoints

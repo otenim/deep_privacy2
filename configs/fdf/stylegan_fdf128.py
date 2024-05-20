@@ -13,5 +13,5 @@ train.update(ims_per_val=int(2e6), batch_size=64, max_images_to_train=int(35e6))
 
 common.update(
     model_url="https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/66d803c0-55ce-44c0-9d53-815c2c0e6ba4eb458409-9e91-45d1-bce0-95c8a47a57218b102fdf-bea3-44dc-aac4-0fb1d370ef1c",
-    model_md5sum="bccd4403e7c9bca682566ff3319e8176"
+    model_md5sum="bccd4403e7c9bca682566ff3319e8176",
 )

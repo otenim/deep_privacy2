@@ -2,13 +2,19 @@ import torch
 import tops
 import sys
 from contextlib import redirect_stdout
-from torch_fidelity.sample_similarity_lpips import NetLinLayer, URL_VGG16_LPIPS, VGG16features, normalize_tensor, spatial_average
+from torch_fidelity.sample_similarity_lpips import (
+    NetLinLayer,
+    URL_VGG16_LPIPS,
+    VGG16features,
+    normalize_tensor,
+    spatial_average,
+)
 
 
 class SampleSimilarityLPIPS(torch.nn.Module):
     SUPPORTED_DTYPES = {
-        'uint8': torch.uint8,
-        'float32': torch.float32,
+        "uint8": torch.uint8,
+        "float32": torch.float32,
     }
 
     def __init__(self):
@@ -30,8 +36,8 @@ class SampleSimilarityLPIPS(torch.nn.Module):
         self.eval()
         for param in self.parameters():
             param.requires_grad = False
-        mean_rescaled = (1 + torch.tensor([-.030, -.088, -.188]).view(1, 3, 1, 1)) * 255 / 2
-        inv_std_rescaled = 2 / (torch.tensor([.458, .448, .450]).view(1, 3, 1, 1) * 255)
+        mean_rescaled = (1 + torch.tensor([-0.030, -0.088, -0.188]).view(1, 3, 1, 1)) * 255 / 2
+        inv_std_rescaled = 2 / (torch.tensor([0.458, 0.448, 0.450]).view(1, 3, 1, 1) * 255)
         self.register_buffer("mean", mean_rescaled)
         self.register_buffer("std", inv_std_rescaled)
 
@@ -43,9 +49,9 @@ class SampleSimilarityLPIPS(torch.nn.Module):
     @staticmethod
     def resize(x, size):
         if x.shape[-1] > size and x.shape[-2] > size:
-            x = torch.nn.functional.interpolate(x, (size, size), mode='area')
+            x = torch.nn.functional.interpolate(x, (size, size), mode="area")
         else:
-            x = torch.nn.functional.interpolate(x, (size, size), mode='bilinear', align_corners=False)
+            x = torch.nn.functional.interpolate(x, (size, size), mode="bilinear", align_corners=False)
         return x
 
     def lpips_from_feats(self, feats0, feats1):
@@ -58,10 +64,10 @@ class SampleSimilarityLPIPS(torch.nn.Module):
         return val
 
     def get_feats(self, x):
-        assert x.dim() == 4 and x.shape[1] == 3, 'Input 0 is not Bx3xHxW'
+        assert x.dim() == 4 and x.shape[1] == 3, "Input 0 is not Bx3xHxW"
         if x.shape[-2] < 16 or x.shape[-1] < 16:  # Resize images < 16x16
             f = 2
-            size = tuple([int(f*_) for _ in x.shape[-2:]])
+            size = tuple([int(f * _) for _ in x.shape[-2:]])
             x = torch.nn.functional.interpolate(x, size=size, mode="bilinear", align_corners=False)
         in0_input = self.normalize(x)
         outs0 = self.net.forward(in0_input)

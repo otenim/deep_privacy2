@@ -24,13 +24,7 @@ def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
 
 class MaskRCNNVitPose(BaseDetector):
 
-    def __init__(
-            self,
-            mask_rcnn_cfg,
-            post_process_cfg,
-            score_threshold: float,
-            **kwargs
-    ) -> None:
+    def __init__(self, mask_rcnn_cfg, post_process_cfg, score_threshold: float, **kwargs) -> None:
         super().__init__(kwargs["cache_directory"])
         self.mask_rcnn = MaskRCNNDetector(**mask_rcnn_cfg, score_thres=score_threshold)
         self.vit_pose = VitPoseModel("vit_huge")
@@ -41,29 +35,27 @@ class MaskRCNNVitPose(BaseDetector):
         return self.forward(*args, **kwargs)
 
     def load_from_cache(self, cache_path: Path):
-        logger.log(f"Loading detection from cache path: {cache_path}",)
+        logger.log(
+            f"Loading detection from cache path: {cache_path}",
+        )
         with lzma.open(cache_path, "rb") as fp:
             state_dict = torch.load(fp, map_location="cpu")
         kwargs = dict(
             post_process_cfg=self.post_process_cfg,
         )
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor):
         maskrcnn_dets = self.mask_rcnn(im)
 
-        maskrcnn_person = {
-            k: v[maskrcnn_dets["is_person"]] for k, v in maskrcnn_dets.items()
-        }
+        maskrcnn_person = {k: v[maskrcnn_dets["is_person"]] for k, v in maskrcnn_dets.items()}
         boxes = masks_to_boxes(maskrcnn_person["segmentation"])
         keypoints = self.vit_pose(im, boxes).cpu()
         keypoints[:, :, -1] = keypoints[:, :, -1] >= 0.3
         persons_without_cse = PersonDetection(
-            maskrcnn_person["segmentation"], **self.post_process_cfg,
+            maskrcnn_person["segmentation"],
+            **self.post_process_cfg,
             orig_imshape_CHW=im.shape,
             keypoints=keypoints,
         )

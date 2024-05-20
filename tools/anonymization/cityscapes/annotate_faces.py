@@ -11,6 +11,7 @@ from detectron2.data.datasets.cityscapes import load_cityscapes_instances
 from detectron2.structures.masks import polygons_to_bitmask
 from ..coco.annotate_faces import get_matches
 
+
 def draw_faces(im, bboxes):
     for bbox in bboxes:
         x0, y0, x1, y1 = [int(_) for _ in bbox]
@@ -22,15 +23,20 @@ def draw_keypoints(im, keypoints):
         for x0, y0, visible in kp:
             if visible == 0:
                 continue
-            cv2.circle(im, (x0, y0), 1, color=(0, 255,0), thickness=2)
+            cv2.circle(im, (x0, y0), 1, color=(0, 255, 0), thickness=2)
+
 
 ddir = Path("/mnt/work2/haakohu/datasets/cityscapes/")
+
+
 def iterate_dataset():
     dataset = load_cityscapes_instances(ddir.joinpath("leftImg8bit/train"), ddir.joinpath("gtFine/train"))
 
-    for sample in tqdm.tqdm(dataset): # dict_keys(['file_name', 'image_id', 'height', 'width', 'annotations'])
+    for sample in tqdm.tqdm(dataset):  # dict_keys(['file_name', 'image_id', 'height', 'width', 'annotations'])
         masks = []
-        for i, instance_annotation in enumerate(sample["annotations"]): # dict_keys(['iscrowd', 'category_id', 'segmentation', 'bbox', 'bbox_mode'])
+        for i, instance_annotation in enumerate(
+            sample["annotations"]
+        ):  # dict_keys(['iscrowd', 'category_id', 'segmentation', 'bbox', 'bbox_mode'])
             # Detectron2 filters out all instances part of crowd
             # In keypoint annotation I did not filter out crowd label
             assert isinstance(instance_annotation["iscrowd"], bool)
@@ -38,7 +44,9 @@ def iterate_dataset():
                 continue
             if int(instance_annotation["category_id"]) != 0:
                 continue
-            mask = polygons_to_bitmask(instance_annotation["segmentation"], height=sample["height"], width=sample["width"])
+            mask = polygons_to_bitmask(
+                instance_annotation["segmentation"], height=sample["height"], width=sample["width"]
+            )
             masks.append(mask)
         if len(masks) == 0:
             yield sample["file_name"], sample["image_id"], None, None, None
@@ -51,14 +59,16 @@ def iterate_dataset():
         masks = np.stack(masks)
         yield sample["file_name"], sample["image_id"], im, masks, orig_im_mode
 
+
 def draw_faces(im, bboxes):
     for bbox in bboxes:
         x0, y0, x1, y1 = [int(_) for _ in bbox]
         cv2.rectangle(im, (x0, y0), (x1, y1), (0, 0, 255), 2)
 
+
 def annotate_cityscapes(detector: DSFDDetector):
     target_path = ddir.joinpath("face_boxes_train.json")
-    #print(dataset[0]["annotations"][0].keys(())
+    # print(dataset[0]["annotations"][0].keys(())
     all_results = dict()
     n_instances = 0
     n_boxes = 0
@@ -79,10 +89,7 @@ def annotate_cityscapes(detector: DSFDDetector):
 
 
 if __name__ == "__main__":
-    detector = build_detector(
-        clip_boxes=True,
-        confidence_threshold=0.2
-        )
+    detector = build_detector(clip_boxes=True, confidence_threshold=0.2)
     annotate_cityscapes(
         detector,
     )

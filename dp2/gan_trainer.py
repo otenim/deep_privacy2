@@ -49,7 +49,7 @@ def check_ddp_consistency(module):
     assert isinstance(module, torch.nn.Module)
     params_buffs = list(module.named_parameters()) + list(module.named_buffers())
     for name, tensor in params_buffs:
-        fullname = type(module).__name__ + '.' + name
+        fullname = type(module).__name__ + "." + name
         tensor = tensor.detach()
         if tensor.is_floating_point():
             tensor = torch.nan_to_num(tensor)
@@ -58,7 +58,7 @@ def check_ddp_consistency(module):
         assert (tensor == other).all(), fullname
 
 
-class AverageMeter():
+class AverageMeter:
     def __init__(self) -> None:
         self.to_log = dict()
         self.n = defaultdict(int)
@@ -80,26 +80,28 @@ class AverageMeter():
 class GANTrainer:
 
     def __init__(
-            self,
-            G: torch.nn.Module,
-            D: torch.nn.Module,
-            G_EMA: torch.nn.Module,
-            D_optim: torch.optim.Optimizer,
-            G_optim: torch.optim.Optimizer,
-            dl_train: typing.Iterator,
-            dl_val: typing.Iterable,
-            scaler_D: torch.cuda.amp.GradScaler,
-            scaler_G: torch.cuda.amp.GradScaler,
-            ims_per_log: int,
-            max_images_to_train: int,
-            loss_handler,
-            ims_per_val: int,
-            evaluate_fn,
-            batch_size: int,
-            broadcast_buffers: bool,
-            fp16_ddp_accumulate: bool,
-            save_state: bool,
-            *args, **kwargs):
+        self,
+        G: torch.nn.Module,
+        D: torch.nn.Module,
+        G_EMA: torch.nn.Module,
+        D_optim: torch.optim.Optimizer,
+        G_optim: torch.optim.Optimizer,
+        dl_train: typing.Iterator,
+        dl_val: typing.Iterable,
+        scaler_D: torch.cuda.amp.GradScaler,
+        scaler_G: torch.cuda.amp.GradScaler,
+        ims_per_log: int,
+        max_images_to_train: int,
+        loss_handler,
+        ims_per_val: int,
+        evaluate_fn,
+        batch_size: int,
+        broadcast_buffers: bool,
+        fp16_ddp_accumulate: bool,
+        save_state: bool,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         self.G = G
@@ -120,28 +122,31 @@ class GANTrainer:
         self.broadcast_buffers = broadcast_buffers
         self.fp16_ddp_accumulate = fp16_ddp_accumulate
 
-        self.train_state = EasyDict(
-            next_log_step=0,
-            next_val_step=ims_per_val,
-            total_time=0
-        )
+        self.train_state = EasyDict(next_log_step=0, next_val_step=ims_per_val, total_time=0)
 
-        checkpointer.register_models(dict(
-            generator=G, discriminator=D, EMA_generator=G_EMA,
-            D_optimizer=D_optim,
-            G_optimizer=G_optim,
-            train_state=self.train_state,
-            scaler_D=self.scaler_D,
-            scaler_G=self.scaler_G
-        ))
+        checkpointer.register_models(
+            dict(
+                generator=G,
+                discriminator=D,
+                EMA_generator=G_EMA,
+                D_optimizer=D_optim,
+                G_optimizer=G_optim,
+                train_state=self.train_state,
+                scaler_D=self.scaler_D,
+                scaler_G=self.scaler_G,
+            )
+        )
         if checkpointer.has_checkpoint():
             checkpointer.load_registered_models()
             logger.log(f"Resuming training from: global step: {logger.global_step()}")
         else:
-            logger.add_dict({
-                "stats/discriminator_parameters": tops.num_parameters(self.D),
-                "stats/generator_parameters": tops.num_parameters(self.G),
-            }, commit=False)
+            logger.add_dict(
+                {
+                    "stats/discriminator_parameters": tops.num_parameters(self.D),
+                    "stats/generator_parameters": tops.num_parameters(self.G),
+                },
+                commit=False,
+            )
         if save_state:
             # If the job is unexpectedly killed, there could be a mismatch between previously saved checkpoint and the current checkpoint.
             atexit.register(checkpointer.save_registered_models)
@@ -151,10 +156,14 @@ class GANTrainer:
         self.to_log = AverageMeter()
         self.trainable_params_D = [param for param in self.D.parameters() if param.requires_grad]
         self.trainable_params_G = [param for param in self.G.parameters() if param.requires_grad]
-        logger.add_dict({
-            "stats/discriminator_trainable_parameters": sum(p.numel() for p in self.trainable_params_D),
-            "stats/generator_trainable_parameters": sum(p.numel() for p in self.trainable_params_G),
-        }, commit=False, level=logging.INFO)
+        logger.add_dict(
+            {
+                "stats/discriminator_trainable_parameters": sum(p.numel() for p in self.trainable_params_D),
+                "stats/generator_trainable_parameters": sum(p.numel() for p in self.trainable_params_G),
+            },
+            commit=False,
+            level=logging.INFO,
+        )
         check_ddp_consistency(self.D)
         check_ddp_consistency(self.G)
         check_ddp_consistency(self.G_EMA.generator)
@@ -185,7 +194,7 @@ class GANTrainer:
                 self.log_time()
                 self.save_images()
                 self.train_state.next_val_step += self.images_per_val
-            logger.step(self.batch_size*tops.world_size())
+            logger.step(self.batch_size * tops.world_size())
         logger.log(f"Reached end of training at step {logger.global_step()}.")
         checkpointer.save_registered_models()
 
@@ -207,17 +216,15 @@ class GANTrainer:
             self.G_EMA.update(self.G)
         total_time = time.time() - start_time
         ims_per_sec = n_ims / total_time
-        ims_per_hour = ims_per_sec * 60*60
+        ims_per_hour = ims_per_sec * 60 * 60
         ims_per_day = ims_per_hour * 24
         logger.log(f"Images per hour: {ims_per_hour/1e6:.3f}M")
         logger.log(f"Images per day: {ims_per_day/1e6:.3f}M")
         import math
+
         ims_per_4_day = int(math.ceil(ims_per_day / tops.world_size() * 4))
         logger.log(f"Images per 4 days: {ims_per_4_day}")
-        logger.add_dict({
-            "stats/ims_per_day": ims_per_day,
-            "stats/ims_per_4_day": ims_per_4_day
-        })
+        logger.add_dict({"stats/ims_per_day": ims_per_day, "stats/ims_per_4_day": ims_per_4_day})
 
     def log_time(self):
         if not hasattr(self, "start_time"):
@@ -233,11 +240,13 @@ class GANTrainer:
         self.train_state.total_time += training_time_hours
         remaining_images = self.max_images_to_train - logger.global_step()
         remaining_time = remaining_images / n_ims_per_sec / 60 / 60
-        logger.add_dict({
-            "stats/n_ims_per_sec": n_ims_per_sec,
-            "stats/total_traing_time_hours": self.train_state.total_time,
-            "stats/remaining_time_hours": remaining_time
-        })
+        logger.add_dict(
+            {
+                "stats/n_ims_per_sec": n_ims_per_sec,
+                "stats/total_traing_time_hours": self.train_state.total_time,
+                "stats/remaining_time_hours": remaining_time,
+            }
+        )
         self.last_time_step = logger.global_step()
         self.start_time = time.time()
 
@@ -270,7 +279,7 @@ class GANTrainer:
         reals = vis_utils.visualize_batch(**tops.to_cpu(batch))[:ims_to_log]
         to_vis.insert(0, reals)
         to_vis = torch.cat(to_vis)
-        logger.add_images("images/diverse", to_vis, nrow=ims_diverse+1)
+        logger.add_images("images/diverse", to_vis, nrow=ims_diverse + 1)
 
         self.G_EMA.train()
         pass

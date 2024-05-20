@@ -1,14 +1,7 @@
 FROM nvcr.io/nvidia/pytorch:22.08-py3
-ARG UID=1000
-ARG UNAME=testuser
-ARG WANDB_API_KEY
-RUN useradd -ms /bin/bash -u $UID $UNAME && \
-    mkdir -p /home/${UNAME} &&\
-    chown -R $UID /home/${UNAME}
-WORKDIR /home/${UNAME}
+WORKDIR /app
 ENV DEBIAN_FRONTEND="noninteractive"
-ENV WANDB_API_KEY=$WANDB_API_KEY
-ENV TORCH_HOME=/home/${UNAME}/.cache
+ENV TORCH_HOME=/app/.cache
 
 # OPTIONAL - DeepPrivacy2 uses these environment variables to set directories outside the current working directory
 #ENV BASE_DATASET_DIR=/work/haakohu/datasets

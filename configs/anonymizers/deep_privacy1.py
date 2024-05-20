@@ -11,5 +11,5 @@ anonymizer.detector = L(DeepPrivacy1Detector)(
     face_post_process_cfg=dict(target_imsize=(128, 128), fdf128_expand=True),
     score_threshold=0.3,
     keypoint_threshold=0.3,
-    cache_directory=common.output_dir.joinpath("deep_privacy1_cache")
+    cache_directory=common.output_dir.joinpath("deep_privacy1_cache"),
 )

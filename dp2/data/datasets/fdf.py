@@ -3,8 +3,10 @@ from typing import Tuple
 import numpy as np
 import torch
 import pathlib
+
 try:
     import pyspng
+
     PYSPNG_IMPORTED = True
 except ImportError:
     PYSPNG_IMPORTED = False
@@ -15,30 +17,23 @@ from tops import logger
 
 class FDFDataset:
 
-    def __init__(self,
-                 dirpath,
-                 imsize: Tuple[int],
-                 load_keypoints: bool,
-                 transform):
+    def __init__(self, dirpath, imsize: Tuple[int], load_keypoints: bool, transform):
         dirpath = pathlib.Path(dirpath)
         self.dirpath = dirpath
         self.transform = transform
         self.imsize = imsize[0]
         self.load_keypoints = load_keypoints
-        assert self.dirpath.is_dir(),\
-            f"Did not find dataset at: {dirpath}"
+        assert self.dirpath.is_dir(), f"Did not find dataset at: {dirpath}"
         image_dir = self.dirpath.joinpath("images", str(self.imsize))
         self.image_paths = list(image_dir.glob("*.png"))
-        assert len(self.image_paths) > 0,\
-            f"Did not find images in: {image_dir}"
+        assert len(self.image_paths) > 0, f"Did not find images in: {image_dir}"
         self.image_paths.sort(key=lambda x: int(x.stem))
         self.landmarks = np.load(self.dirpath.joinpath("landmarks.npy")).reshape(-1, 7, 2).astype(np.float32)
 
         self.bounding_boxes = torch.load(self.dirpath.joinpath("bounding_box", f"{self.imsize}.torch"))
         assert len(self.image_paths) == len(self.bounding_boxes)
         assert len(self.image_paths) == len(self.landmarks)
-        logger.log(
-            f"Dataset loaded from: {dirpath}. Number of samples:{len(self)}, imsize={imsize}")
+        logger.log(f"Dataset loaded from: {dirpath}. Number of samples:{len(self)}, imsize={imsize}")
 
     def get_mask(self, idx):
         mask = torch.ones((1, self.imsize, self.imsize), dtype=torch.bool)
@@ -74,27 +69,21 @@ class FDFDataset:
 
 class FDF256Dataset:
 
-    def __init__(self,
-                 dirpath,
-                 load_keypoints: bool,
-                 transform):
+    def __init__(self, dirpath, load_keypoints: bool, transform):
         dirpath = pathlib.Path(dirpath)
         self.dirpath = dirpath
         self.transform = transform
         self.load_keypoints = load_keypoints
-        assert self.dirpath.is_dir(),\
-            f"Did not find dataset at: {dirpath}"
+        assert self.dirpath.is_dir(), f"Did not find dataset at: {dirpath}"
         image_dir = self.dirpath.joinpath("images")
         self.image_paths = list(image_dir.glob("*.png"))
-        assert len(self.image_paths) > 0,\
-            f"Did not find images in: {image_dir}"
+        assert len(self.image_paths) > 0, f"Did not find images in: {image_dir}"
         self.image_paths.sort(key=lambda x: int(x.stem))
         self.landmarks = np.load(self.dirpath.joinpath("landmarks.npy")).reshape(-1, 7, 2).astype(np.float32)
         self.bounding_boxes = torch.from_numpy(np.load(self.dirpath.joinpath("bounding_box.npy")))
         assert len(self.image_paths) == len(self.bounding_boxes)
         assert len(self.image_paths) == len(self.landmarks)
-        logger.log(
-            f"Dataset loaded from: {dirpath}. Number of samples:{len(self)}")
+        logger.log(f"Dataset loaded from: {dirpath}. Number of samples:{len(self)}")
 
     def get_mask(self, idx):
         mask = torch.ones((1, 256, 256), dtype=torch.bool)

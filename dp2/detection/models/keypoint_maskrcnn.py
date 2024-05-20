@@ -17,6 +17,7 @@ def get_rn50_fpn_keypoint_rcnn(weight_path: str):
     from detectron2.modeling.poolers import ROIPooler
     from detectron2.modeling.roi_heads import KRCNNConvDeconvUpsampleHead
     from detectron2.layers import ShapeSpec
+
     model = model_zoo.get_config("common/models/mask_rcnn_fpn.py").model
     model.roi_heads.update(
         num_classes=1,
@@ -51,7 +52,10 @@ def get_rn50_fpn_keypoint_rcnn(weight_path: str):
 
 
 models = {
-    "rn50_fpn_maskrcnn": functools.partial(get_rn50_fpn_keypoint_rcnn, weight_path="https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/532a57f3-594b-4ec9-a6db-ef2e328ad60ae337668e-a83c-4222-9fa0-cec6f91adf4841b9a42e-a28e-403e-8b96-d55ac443b8c6")
+    "rn50_fpn_maskrcnn": functools.partial(
+        get_rn50_fpn_keypoint_rcnn,
+        weight_path="https://api.loke.aws.unit.no/dlr-gui-backend-resources-content/v2/contents/links/532a57f3-594b-4ec9-a6db-ef2e328ad60ae337668e-a83c-4222-9fa0-cec6f91adf4841b9a42e-a28e-403e-8b96-d55ac443b8c6",
+    )
 }
 
 
@@ -81,12 +85,12 @@ class KeypointMaskRCNN:
         H, W = im.shape[-2:]
         if self.test_transform.is_range:
             size = np.random.randint(
-                self.test_transform.short_edge_length[0], self.test_transform.short_edge_length[1] + 1)
+                self.test_transform.short_edge_length[0], self.test_transform.short_edge_length[1] + 1
+            )
         else:
             size = np.random.choice(self.test_transform.short_edge_length)
         newH, newW = ResizeShortestEdge.get_output_shape(H, W, size, self.test_transform.max_size)
-        return resize(
-            im, (newH, newW), antialias=True)
+        return resize(im, (newH, newW), antialias=True)
 
     def __call__(self, *args, **kwargs):
         return self.forward(*args, **kwargs)
@@ -107,5 +111,5 @@ class KeypointMaskRCNN:
         return dict(
             scores=instances.get("scores").cpu(),
             segmentation=instances.get("pred_masks").cpu(),
-            keypoints=instances.get("pred_keypoints").cpu()
+            keypoints=instances.get("pred_keypoints").cpu(),
         )

@@ -4,6 +4,7 @@ import tops
 from tops.config import instantiate
 from dp2 import utils
 
+
 @click.command()
 @click.argument("config_path")
 def run(config_path):
@@ -21,12 +22,12 @@ def run(config_path):
     loss_fnc = instantiate(cfg.loss_fnc, D=D, G=G)
     batch = next(iter(dl_val))
     tops.print_module_summary(G, batch, max_nesting=10)
-#    tops.print_module_summary(D, batch, max_nesting=10)
+    #    tops.print_module_summary(D, batch, max_nesting=10)
 
-    print("G PARAMS:", tops.num_parameters(G) / 10 ** 6)
-    print("D PARAMS:", tops.num_parameters(D) / 10 ** 6)
+    print("G PARAMS:", tops.num_parameters(G) / 10**6)
+    print("D PARAMS:", tops.num_parameters(D) / 10**6)
     print(f"Number of trainable parameters in D: {sum(p.numel() for p in D.parameters() if p.requires_grad)/10**6}M")
-    print(f"Number of trainable parameters in G: {sum(p.numel() for p in G.parameters() if p.requires_grad)/10**6}M" )
+    print(f"Number of trainable parameters in G: {sum(p.numel() for p in G.parameters() if p.requires_grad)/10**6}M")
 
     with torch.cuda.amp.autocast(True):
         o_G = G(**batch)
@@ -44,6 +45,7 @@ def run(config_path):
         if p.grad is None and p.requires_grad:
             print(name)
     assert all([p.grad is not None or not p.requires_grad for p in G.parameters()])
+
 
 if __name__ == "__main__":
     run()

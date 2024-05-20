@@ -13,7 +13,9 @@ from torchvision.transforms.functional import resize
 
 @torch.no_grad()
 @torch.cuda.amp.autocast()
-def get_im(dl, G, num_images, num_z, fscale_vis, truncation_value: float, b_idx, multi_modal_truncation, show_lowres: bool):
+def get_im(
+    dl, G, num_images, num_z, fscale_vis, truncation_value: float, b_idx, multi_modal_truncation, show_lowres: bool
+):
     ims = []
     for im_idx in tqdm.trange(num_images, desc="Sampling images"):
         batch = next(dl)
@@ -22,9 +24,9 @@ def get_im(dl, G, num_images, num_z, fscale_vis, truncation_value: float, b_idx,
         ims.append(utils.im2numpy(vis_utils.visualize_batch(**batch))[0])
         for z_idx in range(num_z):
             # Sample same Z by setting seed for different images
-            tops.set_seed(b_idx*num_z + z_idx)
+            tops.set_seed(b_idx * num_z + z_idx)
             if multi_modal_truncation and z_idx > 0:
-                fake = G.multi_modal_truncate(**batch, truncation_value=0, w_indices=[z_idx-1])
+                fake = G.multi_modal_truncate(**batch, truncation_value=0, w_indices=[z_idx - 1])
             else:
                 fake = G.sample(**batch, truncation_value=truncation_value)
             if "x_lowres" in fake and show_lowres:
@@ -33,7 +35,7 @@ def get_im(dl, G, num_images, num_z, fscale_vis, truncation_value: float, b_idx,
                     ims.append(utils.im2numpy(x, to_uint8=True, denormalize=True)[0])
             ims.append(utils.im2numpy(fake["img"], to_uint8=True, denormalize=True)[0])
     if fscale_vis != 1:
-        new_shape = [int(_*fscale_vis) for _ in ims[0].shape[:2][::-1]]
+        new_shape = [int(_ * fscale_vis) for _ in ims[0].shape[:2][::-1]]
         ims = [np.array(Image.fromarray(im).resize(new_shape)) for im in ims]
     im = tops.np_make_image_grid(ims, nrow=num_images)
     return im
@@ -49,11 +51,7 @@ def get_im(dl, G, num_images, num_z, fscale_vis, truncation_value: float, b_idx,
 @click.option("--save", default=False, is_flag=True)
 @click.option("--train", default=False, is_flag=True)
 @click.option("--multi-modal-truncation", "--mt", default=False, is_flag=True)
-def show_samples(
-        config_path: str,
-        save: bool,
-        train: bool,
-        **kwargs):
+def show_samples(config_path: str, save: bool, train: bool, **kwargs):
     tops.set_seed(1)
     cfg = utils.load_config(config_path)
     G = infer.build_trained_generator(cfg)
@@ -81,6 +79,7 @@ def show_samples(
             break
         if key == ord("a"):
             im = get_im(dl_val, G, b_idx=b_idx, **kwargs)
+
 
 if __name__ == "__main__":
     show_samples()

@@ -14,8 +14,8 @@ def config_to_str(cfg):
 
 def init_tops(cfg, reinit=False):
     tops.init(
-        cfg.output_dir, cfg.common.logger_backend,  cfg.experiment_name,
-        cfg.common.wandb_project, dict(cfg), reinit)
+        cfg.output_dir, cfg.common.logger_backend, cfg.experiment_name, cfg.common.wandb_project, dict(cfg), reinit
+    )
 
 
 def tqdm_(iterator, *args, **kwargs):

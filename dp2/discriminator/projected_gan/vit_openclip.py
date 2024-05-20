@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 try:
     import open_clip
     from open_clip.model import VisualTransformer
@@ -13,9 +14,7 @@ class OpenCLIPViT(nn.Module):
 
     def __init__(self, model_name, pretrained_dataset) -> None:
         super().__init__()
-        assert model_name in [
-            "ViT-B-32", "ViT-B-16", "ViT-L-14", "ViT-H-14", "ViT-g-14"
-        ]
+        assert model_name in ["ViT-B-32", "ViT-B-16", "ViT-L-14", "ViT-H-14", "ViT-g-14"]
         assert model_name not in ["ViT-H-14", "ViT-g-14"]
         if model_name == "ViT-B-16":
             proj_features = [96, 192, 384, 768]
@@ -43,7 +42,7 @@ class OpenCLIPViT(nn.Module):
         # we can use it with interpolated position embeddings without modifying the library source.
         model.layer_hooks = layer_hooks
         self.model = model
-        self.model.transformer.resblocks = self.model.transformer.resblocks[:max(self.model.layer_hooks)+1]
+        self.model.transformer.resblocks = self.model.transformer.resblocks[: max(self.model.layer_hooks) + 1]
         if patch_size[0] == 32:
             self._make_proj_layers_vit32(vit_dim, proj_features)
         else:
@@ -51,8 +50,7 @@ class OpenCLIPViT(nn.Module):
 
     def _make_proj_layers_vit32(self, vit_dim, proj_features):
         self.layer1 = nn.Sequential(
-            nn.Conv2d(vit_dim, proj_features[0], 1),
-            nn.ConvTranspose2d(proj_features[0], proj_features[0], 8, stride=8)
+            nn.Conv2d(vit_dim, proj_features[0], 1), nn.ConvTranspose2d(proj_features[0], proj_features[0], 8, stride=8)
         )
 
         self.layer2 = nn.Sequential(
@@ -71,8 +69,7 @@ class OpenCLIPViT(nn.Module):
 
     def _make_proj_layers(self, vit_dim, proj_features):
         self.layer1 = nn.Sequential(
-            nn.Conv2d(vit_dim, proj_features[0], 1),
-            nn.ConvTranspose2d(proj_features[0], proj_features[0], 4, stride=4)
+            nn.Conv2d(vit_dim, proj_features[0], 1), nn.ConvTranspose2d(proj_features[0], proj_features[0], 4, stride=4)
         )
 
         self.layer2 = nn.Sequential(
@@ -93,14 +90,22 @@ class OpenCLIPViT(nn.Module):
         assert isinstance(self.model, VisualTransformer)
         b, c, h, w = x.shape
         pos_embed = _resize_pos_embed(
-            self.model.positional_embedding[None], h // self.patch_size[1], w // self.patch_size[0], self.slice_start_idx
+            self.model.positional_embedding[None],
+            h // self.patch_size[1],
+            w // self.patch_size[0],
+            self.slice_start_idx,
         )[0]
 
         x = self.model.conv1(x)
         x = rearrange(x, "n c h w -> n (h w) c")
         x = torch.cat(
-            [self.model.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
-             x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+            [
+                self.model.class_embedding.to(x.dtype)
+                + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
+                x,
+            ],
+            dim=1,
+        )  # shape = [*, grid ** 2 + 1, width]
         x = x + pos_embed
         x = self.model.ln_pre(x)
         x = rearrange(x, "b l c -> l b c")
@@ -114,11 +119,8 @@ class OpenCLIPViT(nn.Module):
     def forward(self, x: torch.Tensor):
         b, c, h, w = x.shape
         features = self.forward_vit(x)  # Outputs l n  c
-        features = [x[self.slice_start_idx:] for x in features]
-        features = [
-            rearrange(f, "(h w) n c -> n c h w", h=h//self.patch_size[0])
-            for f in features
-        ]
+        features = [x[self.slice_start_idx :] for x in features]
+        features = [rearrange(f, "(h w) n c -> n c h w", h=h // self.patch_size[0]) for f in features]
 
         x0, x1, x2, x3 = features
         x0 = self.layer1(x0)

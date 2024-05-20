@@ -4,7 +4,7 @@ from ..discriminators.projected_discriminator import (
     loss_fnc,
     discriminator,
     VIT_PATCH_MAE_LARGE,
-    RN50_CLIP
+    RN50_CLIP,
 )
 from ..defaults import common, EMA, train
 from ..datasets.fdf128_wds.fdf128 import data
@@ -30,7 +30,7 @@ generator.update(
     use_noise=True,
     layer_scale=False,
     input_joint=False,
-    num_resnet_blocks=2
+    num_resnet_blocks=2,
 )
 
 VIT_PATCH_MAE_LARGE.interp_size = (224, 224)

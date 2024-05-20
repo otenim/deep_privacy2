@@ -1,17 +1,17 @@
+import os
 import tempfile
+import traceback
+import warnings
+
 import click
 import tops
-import warnings
-import traceback
 import torch
-import os
-from tops import checkpointer
-from sg3_torch_utils.ops import conv2d_gradfix, grid_sample_gradfix, bias_act, upfirdn2d
+from tops import checkpointer, logger
 from tops.config import instantiate
-from tops import logger
-from dp2 import utils, infer
-from dp2.gan_trainer import GANTrainer
 
+from dp2 import infer, utils
+from dp2.gan_trainer import GANTrainer
+from sg3_torch_utils.ops import bias_act, conv2d_gradfix, grid_sample_gradfix, upfirdn2d
 
 torch.backends.cudnn.benchmark = True
 
@@ -33,9 +33,7 @@ def start_train(rank, world_size, debug, cfg_path, temp_dir, benchmark: bool):
     if world_size > 1:
         init_file = os.path.abspath(os.path.join(temp_dir, ".torch_distributed_init"))
         init_method = f"file://{init_file}"
-        torch.distributed.init_process_group(
-            "nccl", rank=rank, world_size=world_size, init_method=init_method
-        )
+        torch.distributed.init_process_group("nccl", rank=rank, world_size=world_size, init_method=init_method)
         # pin memory in dataloader would allocate memory on device:0 for distributed training.
         torch.cuda.set_device(tops.get_device())
 
@@ -138,7 +136,7 @@ def start_train(rank, world_size, debug, cfg_path, temp_dir, benchmark: bool):
         batch_size=cfg.train.batch_size,
         broadcast_buffers=cfg.train.broadcast_buffers,
         fp16_ddp_accumulate=cfg.train.fp16_ddp_accumulate,
-        save_state=not benchmark
+        save_state=not benchmark,
     )
     if benchmark:
         trainer.estimate_ims_per_hour()
@@ -185,6 +183,7 @@ def main(config_path: str, debug: bool, benchmark: bool):
             )
     else:
         start_train(0, 1, debug, config_path, None, benchmark)
+
 
 if __name__ == "__main__":
     main()

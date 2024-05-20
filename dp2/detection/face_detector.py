@@ -23,13 +23,7 @@ def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
 
 class FaceDetector(BaseDetector):
 
-    def __init__(
-            self,
-            face_detector_cfg: dict,
-            score_threshold: float,
-            face_post_process_cfg: dict,
-            **kwargs
-    ) -> None:
+    def __init__(self, face_detector_cfg: dict, score_threshold: float, face_post_process_cfg: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.face_detector = build_face_detector(**face_detector_cfg, confidence_threshold=score_threshold)
         self.face_mean = tops.to_cuda(torch.from_numpy(self.face_detector.mean).view(3, 1, 1))
@@ -57,6 +51,4 @@ class FaceDetector(BaseDetector):
         logger.log(f"Loading detection from cache path: {cache_path}")
         with lzma.open(cache_path, "rb") as fp:
             state_dict = torch.load(fp)
-        return [
-            state["cls"].from_state_dict(state_dict=state, **self.face_post_process_cfg) for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(state_dict=state, **self.face_post_process_cfg) for state in state_dict]

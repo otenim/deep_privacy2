@@ -8,6 +8,7 @@ from .structures import FaceDetection
 from tops import logger
 from pathlib import Path
 
+
 def is_keypoint_within_bbox(x0, y0, x1, y1, keypoint):
     keypoint = keypoint[:3, :]  # only nose + eyes are relevant
     kp_X = keypoint[:, 0]
@@ -19,17 +20,14 @@ def is_keypoint_within_bbox(x0, y0, x1, y1, keypoint):
 
 def match_bbox_keypoint(bounding_boxes, keypoints):
     """
-        bounding_boxes shape: [N, 5]
-        keypoints: [N persons, K keypoints, (x, y)]
+    bounding_boxes shape: [N, 5]
+    keypoints: [N persons, K keypoints, (x, y)]
     """
     if len(bounding_boxes) == 0 or len(keypoints) == 0:
         return torch.empty((0, 4)), torch.empty((0, 7, 2))
-    assert bounding_boxes.shape[1] == 4,\
-        f"Shape was : {bounding_boxes.shape}"
-    assert keypoints.shape[-1] == 2,\
-        f"Expected (x,y) in last axis, got: {keypoints.shape}"
-    assert keypoints.shape[1] in (5, 7),\
-        f"Expeted 5 or 7 keypoints. Keypoint shape was: {keypoints.shape}"
+    assert bounding_boxes.shape[1] == 4, f"Shape was : {bounding_boxes.shape}"
+    assert keypoints.shape[-1] == 2, f"Expected (x,y) in last axis, got: {keypoints.shape}"
+    assert keypoints.shape[1] in (5, 7), f"Expeted 5 or 7 keypoints. Keypoint shape was: {keypoints.shape}"
 
     matches = []
     for bbox_idx, bbox in enumerate(bounding_boxes):
@@ -47,15 +45,13 @@ def match_bbox_keypoint(bounding_boxes, keypoints):
 
 class DeepPrivacy1Detector(BaseDetector):
 
-    def __init__(self,
-                 keypoint_threshold: float,
-                 face_detector_cfg,
-                 score_threshold: float,
-                 face_post_process_cfg,
-                 **kwargs):
+    def __init__(
+        self, keypoint_threshold: float, face_detector_cfg, score_threshold: float, face_post_process_cfg, **kwargs
+    ):
         super().__init__(**kwargs)
-        self.keypoint_detector = tops.to_cuda(keypointrcnn_resnet50_fpn(
-            weights=KeypointRCNN_ResNet50_FPN_Weights.COCO_V1).eval())
+        self.keypoint_detector = tops.to_cuda(
+            keypointrcnn_resnet50_fpn(weights=KeypointRCNN_ResNet50_FPN_Weights.COCO_V1).eval()
+        )
         self.keypoint_threshold = keypoint_threshold
         self.face_detector = build_face_detector(**face_detector_cfg, confidence_threshold=score_threshold)
         self.face_mean = tops.to_cuda(torch.from_numpy(self.face_detector.mean).view(3, 1, 1))
@@ -96,11 +92,10 @@ class DeepPrivacy1Detector(BaseDetector):
         return [face_boxes]
 
     def load_from_cache(self, cache_path: Path):
-        logger.log(f"Loading detection from cache path: {cache_path}",)
+        logger.log(
+            f"Loading detection from cache path: {cache_path}",
+        )
         with lzma.open(cache_path, "rb") as fp:
             state_dict = torch.load(fp, map_location="cpu")
         kwargs = self.face_post_process_cfg
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]

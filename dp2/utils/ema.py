@@ -14,10 +14,10 @@ class EMA:
     """
 
     def __init__(
-            self,
-            generator: torch.nn.Module,
-            batch_size: int,
-            rampup: float,
+        self,
+        generator: torch.nn.Module,
+        batch_size: int,
+        rampup: float,
     ):
         self.rampup = rampup
         self._nimg_half_time = batch_size * 10 / 32 * 1000
@@ -32,8 +32,8 @@ class EMA:
         y = self._nimg_half_time
         global_step = logger.global_step()
         if self.rampup != None:
-            y = min(y, global_step*self.rampup)
-        self.ra_beta = 0.5 ** (self._batch_size/max(y, 1e-8))
+            y = min(y, global_step * self.rampup)
+        self.ra_beta = 0.5 ** (self._batch_size / max(y, 1e-8))
         if self.ra_beta != self.old_ra_beta:
             logger.add_scalar("stats/EMA_beta", self.ra_beta)
         self.old_ra_beta = self.ra_beta
@@ -41,11 +41,9 @@ class EMA:
     @torch.no_grad()
     def update(self, normal_G):
         with torch.autograd.profiler.record_function("EMA_update"):
-            for ema_p, p in zip(self.generator.parameters(),
-                                normal_G.parameters()):
+            for ema_p, p in zip(self.generator.parameters(), normal_G.parameters()):
                 ema_p.copy_(p.lerp(ema_p, self.ra_beta))
-            for ema_buf, buff in zip(self.generator.buffers(),
-                                     normal_G.buffers()):
+            for ema_buf, buff in zip(self.generator.buffers(), normal_G.buffers()):
                 ema_buf.copy_(buff)
 
     def __call__(self, *args, **kwargs):

@@ -16,16 +16,16 @@ class BaseDetector:
         logger.log(f"Caching detection to: {cache_path}")
         with lzma.open(cache_path, "wb") as fp:
             torch.save(
-                [det.state_dict(after_preprocess=after_preprocess) for det in detection], fp,
-                pickle_protocol=pickle.HIGHEST_PROTOCOL)
+                [det.state_dict(after_preprocess=after_preprocess) for det in detection],
+                fp,
+                pickle_protocol=pickle.HIGHEST_PROTOCOL,
+            )
 
     def load_from_cache(self, cache_path: Path):
         logger.log(f"Loading detection from cache path: {cache_path}")
         with lzma.open(cache_path, "rb") as fp:
             state_dict = torch.load(fp)
-        return [
-            state["cls"].from_state_dict(state_dict=state) for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(state_dict=state) for state in state_dict]
 
     def forward_and_cache(self, im: torch.Tensor, cache_id: str, load_cache: bool):
         if cache_id is None:

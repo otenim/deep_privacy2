@@ -33,9 +33,7 @@ class FeatureExtractorByLayers(nn.Module):
 
 def _make_efficientnet(model_type):
     model = timm.create_model(model_type, pretrained=True)
-    layer0 = nn.Sequential(
-        model.conv_stem, model.bn1, *model.blocks[0:2]
-    )
+    layer0 = nn.Sequential(model.conv_stem, model.bn1, *model.blocks[0:2])
     layer1 = nn.Sequential(*model.blocks[2:3])
     layer2 = nn.Sequential(*model.blocks[3:5])
     layer3 = nn.Sequential(*model.blocks[5:9])
@@ -47,29 +45,24 @@ def _make_resnet50(weight_path=None):
     if weight_path is not None:
         state_dict = tops.load_file_or_url(weight_path)
         model.load_state_dict(state_dict)
-    return FeatureExtractor(
-        model, ["layer1", "layer2", "layer3", "layer4"]
-    )
+    return FeatureExtractor(model, ["layer1", "layer2", "layer3", "layer4"])
 
 
 def _make_resnet50_swav(weight_path):
     model = torch.hub.load("facebookresearch/swav", weight_path)
-    return FeatureExtractor(
-        model, ["layer1", "layer2", "layer3", "layer4"]
-    )
+    return FeatureExtractor(model, ["layer1", "layer2", "layer3", "layer4"])
 
 
 def _make_resnet50_clip(clip_type="RN50"):
     import clip
+
     model, preprocess = clip.load(clip_type, device="cpu")
-    return FeatureExtractor(
-        model.visual,
-        layer_names=["layer1", "layer2", "layer3", "layer4"]
-    )
+    return FeatureExtractor(model.visual, layer_names=["layer1", "layer2", "layer3", "layer4"])
 
 
 def _make_resnet50_cse(cfg_url, **kwargs):
     from dp2.detection.models.cse import CSEDetector
+
     model = CSEDetector(cfg_url=cfg_url).model.cpu()
     return FeatureExtractorByLayers(
         nn.Sequential(
@@ -78,5 +71,5 @@ def _make_resnet50_cse(cfg_url, **kwargs):
         ),
         model.backbone.bottom_up.res3,
         model.backbone.bottom_up.res4,
-        model.backbone.bottom_up.res5
+        model.backbone.bottom_up.res5,
     )

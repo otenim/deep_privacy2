@@ -13,7 +13,7 @@ from typing import Tuple
 
 class RandomHorizontalFlip(torch.nn.Module):
 
-    def __init__(self, p: float,  flip_map=None, **kwargs):
+    def __init__(self, p: float, flip_map=None, **kwargs):
         super().__init__()
         self.flip_ratio = p
         self.flip_map = flip_map
@@ -61,23 +61,17 @@ class Resize(torch.nn.Module):
     def forward(self, container: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         container["img"] = F.resize(container["img"], self.size, self.interpolation, antialias=True)
         if "semantic_mask" in container:
-            container["semantic_mask"] = F.resize(
-                container["semantic_mask"], self.size, F.InterpolationMode.NEAREST)
+            container["semantic_mask"] = F.resize(container["semantic_mask"], self.size, F.InterpolationMode.NEAREST)
         if "embedding" in container:
-            container["embedding"] = F.resize(
-                container["embedding"], self.size, self.interpolation)
+            container["embedding"] = F.resize(container["embedding"], self.size, self.interpolation)
         if "mask" in container:
-            container["mask"] = F.resize(
-                container["mask"], self.size, F.InterpolationMode.NEAREST)
+            container["mask"] = F.resize(container["mask"], self.size, F.InterpolationMode.NEAREST)
         if "E_mask" in container:
-            container["E_mask"] = F.resize(
-                container["E_mask"], self.size, F.InterpolationMode.NEAREST)
+            container["E_mask"] = F.resize(container["E_mask"], self.size, F.InterpolationMode.NEAREST)
         if "maskrcnn_mask" in container:
-            container["maskrcnn_mask"] = F.resize(
-                container["maskrcnn_mask"], self.size, F.InterpolationMode.NEAREST)
+            container["maskrcnn_mask"] = F.resize(container["maskrcnn_mask"], self.size, F.InterpolationMode.NEAREST)
         if "vertices" in container:
-            container["vertices"] = F.resize(
-                container["vertices"], self.size, F.InterpolationMode.NEAREST)
+            container["vertices"] = F.resize(container["vertices"], self.size, F.InterpolationMode.NEAREST)
         return container
 
     def __repr__(self):
@@ -138,7 +132,7 @@ class CreateCondition(torch.nn.Module):
 
     def forward(self, container: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
         if container["img"].dtype == torch.uint8:
-            container["condition"] = container["img"] * container["mask"].byte() + (1-container["mask"].byte()) * 127
+            container["condition"] = container["img"] * container["mask"].byte() + (1 - container["mask"].byte()) * 127
             return container
         container["condition"] = container["img"] * container["mask"]
         return container
@@ -210,13 +204,8 @@ class InsertJointMap(torch.nn.Module):
             ("neck", "mid_hip"): 3,  # body
             ("neck", "nose"): 0,  # head
         }
-        self.indices2category = {
-            tuple([knames.index(n) for n in k]): v for k, v in category.items()
-        }
-        self.connectivity_indices = {
-            knames.index(k): [knames.index(v_) for v_ in v]
-            for k, v in connectivity.items()
-        }
+        self.indices2category = {tuple([knames.index(n) for n in k]): v for k, v in category.items()}
+        self.connectivity_indices = {knames.index(k): [knames.index(v_) for v_ in v] for k, v in connectivity.items()}
         self.l_shoulder = knames.index("left_shoulder")
         self.r_shoulder = knames.index("right_shoulder")
         self.l_hip = knames.index("left_hip")
@@ -234,14 +223,11 @@ class InsertJointMap(torch.nn.Module):
             visible = keypoints[:, -1] > 0
 
             if visible[self.l_shoulder] and visible[self.r_shoulder]:
-                neck = (keypoints[self.l_shoulder]
-                        + (keypoints[self.r_shoulder] - keypoints[self.l_shoulder]) / 2)
+                neck = keypoints[self.l_shoulder] + (keypoints[self.r_shoulder] - keypoints[self.l_shoulder]) / 2
                 keypoints[-2] = neck
                 visible[-2] = 1
             if visible[self.l_hip] and visible[self.r_hip]:
-                mhip = (keypoints[self.l_hip]
-                        + (keypoints[self.r_hip] - keypoints[self.l_hip]) / 2
-                        )
+                mhip = keypoints[self.l_hip] + (keypoints[self.r_hip] - keypoints[self.l_hip]) / 2
                 keypoints[-1] = mhip
                 visible[-1] = 1
 
@@ -258,10 +244,7 @@ class InsertJointMap(torch.nn.Module):
                     e = tuple(keypoints[tidx, :2].round().long().numpy().tolist())
                     draw.line((s, e), width=1, fill=c + 1)
             if visible[self.nose] == 0 and visible[self.neck] == 1:
-                m_eye = (
-                    keypoints[self.l_eye]
-                    + (keypoints[self.r_eye] - keypoints[self.l_eye]) / 2
-                )
+                m_eye = keypoints[self.l_eye] + (keypoints[self.r_eye] - keypoints[self.l_eye]) / 2
                 s = tuple(m_eye[:2].round().long().numpy().tolist())
                 e = tuple(keypoints[self.neck, :2].round().long().numpy().tolist())
                 c = self.indices2category[(self.nose, self.neck)]
@@ -272,7 +255,8 @@ class InsertJointMap(torch.nn.Module):
         return joint_maps[:, None]
 
     def forward(self, batch):
-        batch["joint_map"] = torch.from_numpy(self.create_joint_map(
-            batch["img"].shape[0], *self.imsize, batch["keypoints"]))
+        batch["joint_map"] = torch.from_numpy(
+            self.create_joint_map(batch["img"].shape[0], *self.imsize, batch["keypoints"])
+        )
         batch["joint_map"] = batch["joint_map"].to(batch["img"].device)
         return batch

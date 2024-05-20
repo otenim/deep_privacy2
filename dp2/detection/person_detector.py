@@ -11,12 +11,7 @@ from pathlib import Path
 
 class CSEPersonDetector(BaseDetector):
     def __init__(
-        self,
-        score_threshold: float,
-        mask_rcnn_cfg: dict,
-        cse_cfg: dict,
-        cse_post_process_cfg: dict,
-        **kwargs
+        self, score_threshold: float, mask_rcnn_cfg: dict, cse_cfg: dict, cse_post_process_cfg: dict, **kwargs
     ) -> None:
         super().__init__(**kwargs)
         self.mask_rcnn = MaskRCNNDetector(**mask_rcnn_cfg, score_thres=score_threshold)
@@ -34,10 +29,7 @@ class CSEPersonDetector(BaseDetector):
             post_process_cfg=self.post_process_cfg,
             embed_map=self.cse_detector.embed_map,
         )
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor, cse_dets=None):
@@ -45,9 +37,7 @@ class CSEPersonDetector(BaseDetector):
         if cse_dets is None:
             cse_dets = self.cse_detector(im)
         segmentation = mask_dets["segmentation"]
-        segmentation, cse_dets, _ = combine_cse_maskrcnn_dets(
-            segmentation, cse_dets, self.iou_combine_threshold
-        )
+        segmentation, cse_dets, _ = combine_cse_maskrcnn_dets(segmentation, cse_dets, self.iou_combine_threshold)
         det = CSEPersonDetection(
             segmentation=segmentation,
             cse_dets=cse_dets,
@@ -59,13 +49,7 @@ class CSEPersonDetector(BaseDetector):
 
 
 class MaskRCNNPersonDetector(BaseDetector):
-    def __init__(
-        self,
-        score_threshold: float,
-        mask_rcnn_cfg: dict,
-        cse_post_process_cfg: dict,
-        **kwargs
-    ) -> None:
+    def __init__(self, score_threshold: float, mask_rcnn_cfg: dict, cse_post_process_cfg: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.mask_rcnn = MaskRCNNDetector(**mask_rcnn_cfg, score_thres=score_threshold)
         self.post_process_cfg = cse_post_process_cfg
@@ -79,33 +63,20 @@ class MaskRCNNPersonDetector(BaseDetector):
         kwargs = dict(
             post_process_cfg=self.post_process_cfg,
         )
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor):
         mask_dets = self.mask_rcnn(im)
         segmentation = mask_dets["segmentation"]
-        det = PersonDetection(
-            segmentation, **self.post_process_cfg, orig_imshape_CHW=im.shape
-        )
+        det = PersonDetection(segmentation, **self.post_process_cfg, orig_imshape_CHW=im.shape)
         return [det]
 
 
 class KeypointMaskRCNNPersonDetector(BaseDetector):
-    def __init__(
-        self,
-        score_threshold: float,
-        mask_rcnn_cfg: dict,
-        cse_post_process_cfg: dict,
-        **kwargs
-    ) -> None:
+    def __init__(self, score_threshold: float, mask_rcnn_cfg: dict, cse_post_process_cfg: dict, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.mask_rcnn = KeypointMaskRCNN(
-            **mask_rcnn_cfg, score_threshold=score_threshold
-        )
+        self.mask_rcnn = KeypointMaskRCNN(**mask_rcnn_cfg, score_threshold=score_threshold)
         self.post_process_cfg = cse_post_process_cfg
 
     def __call__(self, *args, **kwargs):
@@ -117,19 +88,13 @@ class KeypointMaskRCNNPersonDetector(BaseDetector):
         kwargs = dict(
             post_process_cfg=self.post_process_cfg,
         )
-        return [
-            state["cls"].from_state_dict(**kwargs, state_dict=state)
-            for state in state_dict
-        ]
+        return [state["cls"].from_state_dict(**kwargs, state_dict=state) for state in state_dict]
 
     @torch.no_grad()
     def forward(self, im: torch.Tensor):
         mask_dets = self.mask_rcnn(im)
         segmentation = mask_dets["segmentation"]
         det = PersonDetection(
-            segmentation,
-            **self.post_process_cfg,
-            orig_imshape_CHW=im.shape,
-            keypoints=mask_dets["keypoints"]
+            segmentation, **self.post_process_cfg, orig_imshape_CHW=im.shape, keypoints=mask_dets["keypoints"]
         )
         return [det]

@@ -63,13 +63,10 @@ def expand_bounding_box(bbox, percentage, imshape):
     x0, y0, x1, y1 = bbox
     width = x1 - x0
     height = y1 - y0
-    x0, y0, width, height = quadratic_bounding_box(
-        x0, y0, width, height, imshape)
+    x0, y0, width, height = quadratic_bounding_box(x0, y0, width, height, imshape)
     expanding_factor = int(max(height, width) * percentage)
 
-    possible_max_expansion = [(imshape[0] - width) // 2,
-                              (imshape[1] - height) // 2,
-                              expanding_factor]
+    possible_max_expansion = [(imshape[0] - width) // 2, (imshape[1] - height) // 2, expanding_factor]
 
     expanding_factor = min(possible_max_expansion)
     # Expand height
@@ -81,11 +78,11 @@ def expand_bounding_box(bbox, percentage, imshape):
 
         height += expanding_factor * 2
         if height > imshape[0]:
-            y0 -= (imshape[0] - height)
+            y0 -= imshape[0] - height
             height = imshape[0]
 
         if height + y0 > imshape[0]:
-            y0 -= (height + y0 - imshape[0])
+            y0 -= height + y0 - imshape[0]
 
         # Expand width
         x0 = x0 - expanding_factor
@@ -93,11 +90,11 @@ def expand_bounding_box(bbox, percentage, imshape):
 
         width += expanding_factor * 2
         if width > imshape[1]:
-            x0 -= (imshape[1] - width)
+            x0 -= imshape[1] - width
             width = imshape[1]
 
         if width + x0 > imshape[1]:
-            x0 -= (width + x0 - imshape[1])
+            x0 -= width + x0 - imshape[1]
     y1 = y0 + height
     x1 = x0 + width
     assert y0 >= 0, "Y0 is minus"
@@ -147,26 +144,20 @@ def expand_bbox_simple(bbox, percentage):
 def pad_image(im, bbox, pad_value):
     x0, y0, x1, y1 = bbox
     if x0 < 0:
-        pad_im = np.zeros((im.shape[0], abs(x0), im.shape[2]),
-                          dtype=np.uint8) + pad_value
+        pad_im = np.zeros((im.shape[0], abs(x0), im.shape[2]), dtype=np.uint8) + pad_value
         im = np.concatenate((pad_im, im), axis=1)
         x1 += abs(x0)
         x0 = 0
     if y0 < 0:
-        pad_im = np.zeros((abs(y0), im.shape[1], im.shape[2]),
-                          dtype=np.uint8) + pad_value
+        pad_im = np.zeros((abs(y0), im.shape[1], im.shape[2]), dtype=np.uint8) + pad_value
         im = np.concatenate((pad_im, im), axis=0)
         y1 += abs(y0)
         y0 = 0
     if x1 >= im.shape[1]:
-        pad_im = np.zeros(
-            (im.shape[0], x1 - im.shape[1] + 1, im.shape[2]),
-            dtype=np.uint8) + pad_value
+        pad_im = np.zeros((im.shape[0], x1 - im.shape[1] + 1, im.shape[2]), dtype=np.uint8) + pad_value
         im = np.concatenate((im, pad_im), axis=1)
     if y1 >= im.shape[0]:
-        pad_im = np.zeros(
-            (y1 - im.shape[0] + 1, im.shape[1], im.shape[2]),
-            dtype=np.uint8) + pad_value
+        pad_im = np.zeros((y1 - im.shape[0] + 1, im.shape[1], im.shape[2]), dtype=np.uint8) + pad_value
         im = np.concatenate((im, pad_im), axis=0)
     return im[y0:y1, x0:x1]
 
@@ -188,9 +179,7 @@ def cut_face(im, bbox, simple_expand=False, pad_value=0, pad_im=True):
     return im[y0:y1, x0:x1]
 
 
-def expand_bbox(
-        bbox_ltrb, imshape, simple_expand, default_to_simple=False,
-        expansion_factor=0.35):
+def expand_bbox(bbox_ltrb, imshape, simple_expand, default_to_simple=False, expansion_factor=0.35):
     assert bbox_ltrb.shape == (4,), f"BBox shape was: {bbox_ltrb.shape}"
     bbox = bbox_ltrb.astype(float)
     # FDF256 uses simple expand with ratio 0.4

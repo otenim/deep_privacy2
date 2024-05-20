@@ -13,8 +13,8 @@ from fast_pytorch_kmeans import KMeans
 @click.command()
 @click.argument("config_path")
 @click.option("-n", "--n_samples", default=int(600e3), type=int)
-@click.option( "--n_centers", "--nc", default=512, type=int)
-@click.option( "--batch_size", default=512, type=int)
+@click.option("--n_centers", "--nc", default=512, type=int)
+@click.option("--batch_size", default=512, type=int)
 def compute_cluster_means(config_path, n_samples, n_centers, batch_size):
     cfg = load_config(config_path)
     G = build_trained_generator(cfg, map_location=torch.device("cpu"))
@@ -29,8 +29,10 @@ def compute_cluster_means(config_path, n_samples, n_centers, batch_size):
         w = torch.zeros((n_samples, w_dim), device=tops.get_device(), dtype=torch.float32)
 
         for i in tqdm.trange(n_batches):
-            w[i*batch_size:(i+1)*batch_size] = style_net(torch.randn((batch_size, z_dim), device=tops.get_device())).cpu()
-        kmeans = KMeans(n_clusters=n_centers, mode='euclidean', verbose=10, max_iter=1000, tol=0.00001)
+            w[i * batch_size : (i + 1) * batch_size] = style_net(
+                torch.randn((batch_size, z_dim), device=tops.get_device())
+            ).cpu()
+        kmeans = KMeans(n_clusters=n_centers, mode="euclidean", verbose=10, max_iter=1000, tol=0.00001)
 
         kmeans.fit_predict(w)
         centers = kmeans.centroids
@@ -43,5 +45,5 @@ def compute_cluster_means(config_path, n_samples, n_centers, batch_size):
     ckpt["EMA_generator"] = G.state_dict()
     torch.save(ckpt, ckpt_path)
 
+
 compute_cluster_means()
-    

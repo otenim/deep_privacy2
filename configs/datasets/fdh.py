@@ -31,12 +31,9 @@ def final_eval_fn(*args, **kwargs):
 def get_cache_directory(imsize, subset):
     return Path(metrics_cache, f"{subset}{imsize[0]}")
 
-dataset_base_dir = (
-    os.environ["BASE_DATASET_DIR"] if "BASE_DATASET_DIR" in os.environ else "data"
-)
-metrics_cache = (
-    os.environ["FBA_METRICS_CACHE"] if "FBA_METRICS_CACHE" in os.environ else ".cache"
-)
+
+dataset_base_dir = os.environ["BASE_DATASET_DIR"] if "BASE_DATASET_DIR" in os.environ else "data"
+metrics_cache = os.environ["FBA_METRICS_CACHE"] if "FBA_METRICS_CACHE" in os.environ else ".cache"
 data_dir = Path(dataset_base_dir, "fdh")
 data = dict(
     imsize=(288, 160),
@@ -54,7 +51,9 @@ data = dict(
             gpu_transform=L(torch.nn.Sequential)(
                 L(ToFloat)(norm=False, keys=["img", "mask", "E_mask", "maskrcnn_mask"]),
                 L(CreateEmbedding)(embed_path=data_dir.joinpath("embed_map.torch")),
-                L(Normalize)(mean=[0.5*255, 0.5*255, 0.5*255], std=[0.5*255, 0.5*255, 0.5*255], inplace=True),
+                L(Normalize)(
+                    mean=[0.5 * 255, 0.5 * 255, 0.5 * 255], std=[0.5 * 255, 0.5 * 255, 0.5 * 255], inplace=True
+                ),
                 L(CreateCondition)(),
             ),
             infinite=True,
@@ -62,7 +61,7 @@ data = dict(
             partial_batches=False,
             load_embedding=True,
             keypoints_split="train",
-            load_new_keypoints=False
+            load_new_keypoints=False,
         )
     ),
     val=dict(
@@ -77,14 +76,16 @@ data = dict(
             partial_batches=True,
             load_embedding=True,
             keypoints_split="val",
-            load_new_keypoints="${data.train.loader.load_new_keypoints}"
+            load_new_keypoints="${data.train.loader.load_new_keypoints}",
         )
     ),
     # Training evaluation might do optimizations to reduce compute overhead. E.g. compute with AMP.
     train_evaluation_fn=L(functools.partial)(
-        train_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdh"),
-        data_len=30_000),
+        train_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdh"), data_len=30_000
+    ),
     evaluation_fn=L(functools.partial)(
-        final_eval_fn, cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdh_eval"), 
-        data_len=30_000)
+        final_eval_fn,
+        cache_directory=L(get_cache_directory)(imsize="${data.imsize}", subset="fdh_eval"),
+        data_len=30_000,
+    ),
 )

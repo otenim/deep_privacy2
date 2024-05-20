@@ -16,9 +16,23 @@ def get_symmetry_transform(symmetry_url):
     return torch.from_numpy(symmetry["vertex_transforms"]).long()
 
 
-hflip_handled_cases = set([
-    "keypoints", "img", "mask", "border", "semantic_mask", "vertices", "E_mask", "embed_map", "condition",
-    "embedding", "vertx2cat", "maskrcnn_mask", "__key__"])
+hflip_handled_cases = set(
+    [
+        "keypoints",
+        "img",
+        "mask",
+        "border",
+        "semantic_mask",
+        "vertices",
+        "E_mask",
+        "embed_map",
+        "condition",
+        "embedding",
+        "vertx2cat",
+        "maskrcnn_mask",
+        "__key__",
+    ]
+)
 
 
 def hflip(container: Dict[str, torch.Tensor], flip_map=None) -> Dict[str, torch.Tensor]:
@@ -32,7 +46,7 @@ def hflip(container: Dict[str, torch.Tensor], flip_map=None) -> Dict[str, torch.
         assert flip_map is not None
         if container["keypoints"].ndim == 3:
             keypoints = container["keypoints"][:, flip_map, :]
-            keypoints[:, :,  0] = 1 - keypoints[:, :,  0]
+            keypoints[:, :, 0] = 1 - keypoints[:, :, 0]
         else:
             assert_shape(container["keypoints"], (None, 3))
             keypoints = container["keypoints"][flip_map, :]
@@ -46,7 +60,8 @@ def hflip(container: Dict[str, torch.Tensor], flip_map=None) -> Dict[str, torch.
         container["semantic_mask"] = F.hflip(container["semantic_mask"])
     if "vertices" in container:
         symmetry_transform = get_symmetry_transform(
-            "https://dl.fbaipublicfiles.com/densepose/meshes/symmetry/symmetry_smpl_27554.pkl")
+            "https://dl.fbaipublicfiles.com/densepose/meshes/symmetry/symmetry_smpl_27554.pkl"
+        )
         container["vertices"] = F.hflip(container["vertices"])
         symmetry_transform_ = symmetry_transform.to(container["vertices"].device)
         container["vertices"] = symmetry_transform_[container["vertices"].long()]

@@ -32,21 +32,24 @@ def cse_det_to_global(boxes_XYXY, S: torch.Tensor, imshape):
         assert y1 <= imshape[0]
         h = y1 - y0
         w = x1 - x0
-        segmentation[i:i+1, y0:y1, x0:x1] = resize(S[i:i+1], (h, w), interpolation=InterpolationMode.NEAREST) > 0
+        segmentation[i : i + 1, y0:y1, x0:x1] = (
+            resize(S[i : i + 1], (h, w), interpolation=InterpolationMode.NEAREST) > 0
+        )
     return segmentation
 
 
 class CSEDetector:
 
     def __init__(
-            self,
-            cfg_url: str = "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/densepose_rcnn_R_101_FPN_DL_soft_s1x.yaml",
-            cfg_2_download: List[str] = [
-                "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/densepose_rcnn_R_101_FPN_DL_soft_s1x.yaml",
-                "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/Base-DensePose-RCNN-FPN.yaml",
-                "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/Base-DensePose-RCNN-FPN-Human.yaml"],
-            score_thres: float = 0.9,
-            nms_thresh: float = None,
+        self,
+        cfg_url: str = "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/densepose_rcnn_R_101_FPN_DL_soft_s1x.yaml",
+        cfg_2_download: List[str] = [
+            "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/densepose_rcnn_R_101_FPN_DL_soft_s1x.yaml",
+            "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/Base-DensePose-RCNN-FPN.yaml",
+            "https://raw.githubusercontent.com/facebookresearch/detectron2/main/projects/DensePose/configs/cse/Base-DensePose-RCNN-FPN-Human.yaml",
+        ],
+        score_thres: float = 0.9,
+        nms_thresh: float = None,
     ) -> None:
         with tops.logger.capture_log_stdout():
             cfg = get_cfg()
@@ -89,9 +92,9 @@ class CSEDetector:
     def resize_im(self, im):
         H, W = im.shape[1:]
         newH, newW = ResizeShortestEdge.get_output_shape(
-            H, W, self.cfg.INPUT.MIN_SIZE_TEST, self.cfg.INPUT.MAX_SIZE_TEST)
-        return resize(
-            im, (newH, newW), InterpolationMode.BILINEAR, antialias=True)
+            H, W, self.cfg.INPUT.MIN_SIZE_TEST, self.cfg.INPUT.MAX_SIZE_TEST
+        )
+        return resize(im, (newH, newW), InterpolationMode.BILINEAR, antialias=True)
 
     @torch.no_grad()
     def forward(self, im):
@@ -109,7 +112,7 @@ class CSEDetector:
                 embed_map=self.mesh_vertex_embeddings["smpl_27554"],
                 bbox_XYXY=torch.empty((0, 4), dtype=torch.long, device=im.device),
                 im_segmentation=torch.empty((0, H, W), dtype=torch.bool, device=im.device),
-                scores=torch.empty((0), dtype=torch.float, device=im.device)
+                scores=torch.empty((0), dtype=torch.float, device=im.device),
             )
         pred_densepose, boxes_xywh, classes = self.densepose_extractor(output)
         assert isinstance(pred_densepose, DensePoseEmbeddingPredictorOutput), pred_densepose
@@ -118,7 +121,7 @@ class CSEDetector:
         mesh_name = self.class_to_mesh_name[classes[0]]
         assert mesh_name == "smpl_27554"
         x0, y0, w, h = [boxes_xywh[:, i] for i in range(4)]
-        boxes_XYXY = torch.stack((x0, y0, x0+w, y0+h), dim=-1)
+        boxes_XYXY = torch.stack((x0, y0, x0 + w, y0 + h), dim=-1)
         boxes_XYXY = boxes_XYXY.round_().long()
 
         non_empty_boxes = (boxes_XYXY[:, :2] == boxes_XYXY[:, 2:]).any(dim=1).logical_not()
@@ -128,7 +131,9 @@ class CSEDetector:
         scores = scores[non_empty_boxes]
         im_segmentation = cse_det_to_global(boxes_XYXY, S, [H, W])
         return dict(
-            instance_segmentation=S, instance_embedding=E,
+            instance_segmentation=S,
+            instance_embedding=E,
             bbox_XYXY=boxes_XYXY,
             im_segmentation=im_segmentation,
-            scores=scores.view(-1))
+            scores=scores.view(-1),
+        )
