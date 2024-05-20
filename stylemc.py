@@ -1,6 +1,6 @@
 """
 Approach: "StyleMC: Multi-Channel Based Fast Text-Guided Image Generation and Manipulation"
-Original source code: 
+Original source code:
 https://github.com/autonomousvision/stylegan_xl/blob/f9be58e98110bd946fcdadef2aac8345466faaf3/run_stylemc.py#
 Modified by Håkon Hukkelås
 """
