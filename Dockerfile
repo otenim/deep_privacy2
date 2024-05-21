@@ -1,7 +1,17 @@
 FROM nvcr.io/nvidia/pytorch:22.08-py3
-WORKDIR /app
+
+ARG USERNAME=testuser
+ARG USER_UID=1000
+ARG USER_GID=$USER_UID
+
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && chown -R $USER_UID:$USER_GID /home/$USERNAME
+RUN mkdir /home/$USERNAME/dev
+
+WORKDIR /home/$USERNAME/dev
 ENV DEBIAN_FRONTEND="noninteractive"
-ENV TORCH_HOME=/app/.cache
+ENV TORCH_HOME=/home/$USERNAME/.cache
 
 # OPTIONAL - DeepPrivacy2 uses these environment variables to set directories outside the current working directory
 #ENV BASE_DATASET_DIR=/work/haakohu/datasets
@@ -39,3 +49,5 @@ RUN pip install \
     scikit-image \
     timm==0.6.7
 RUN pip install --no-deps torch_fidelity==0.3.0 clip@git+https://github.com/openai/CLIP.git@b46f5ac7587d2e1862f8b7b1573179d80dcdd620
+
+USER $USERNAME
