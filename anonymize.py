@@ -20,7 +20,7 @@ from dp2.utils.bufferless_video_capture import BufferlessVideoCapture
 def show_video(video_path):
     video_cap = cv2.VideoCapture(str(video_path))
     while video_cap.isOpened():
-        ret, frame = video_cap.read()
+        _, frame = video_cap.read()
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(25)
         if key == ord("q"):
@@ -44,14 +44,15 @@ def anonymize_video(
     output_path: Path,
     anonymizer,
     max_res: int,
+    fps: Union[int, None],
     start_time: int,
-    fps: int,
-    end_time: int,
+    end_time: Union[int, None],
     visualize_detection: bool,
     track: bool,
     synthesis_kwargs,
     **kwargs,
 ):
+    video: mp.VideoFileClip
     video = mp.VideoFileClip(str(video_path))
     if track:
         anonymizer.initialize_tracker(video.fps)
@@ -69,17 +70,15 @@ def anonymize_video(
         anonymized = utils.im2numpy(anonymized)
         return anonymized
 
-    video: mp.VideoClip = video.subclip(start_time, end_time)
+    video = video.subclip(start_time, end_time)
 
     if fps is not None:
         video = video.set_fps(fps)
 
     video = video.fl_image(ImageIndexTracker(process_frame).fl_image)
-    if str(output_path).endswith(".avi"):
-        output_path = str(output_path).replace(".avi", ".mp4")
-    if not output_path.parent.exists():
-        output_path.parent.mkdir(parents=True)
-    video.write_videofile(str(output_path))
+    if output_path.suffix == ".avi":
+        output_path = output_path.with_suffix(".mp4")
+    video.write_videofile(output_path)
 
 
 def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
@@ -100,7 +99,7 @@ def anonymize_image(
     visualize_detection: bool,
     synthesis_kwargs: dict,
     **kwargs,
-):
+) -> None:
     with Image.open(image_path) as im:
         im = _apply_exif_orientation(im)
         orig_im_mode = im.mode
