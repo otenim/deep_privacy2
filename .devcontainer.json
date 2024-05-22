@@ -12,6 +12,7 @@
     "customizations": {
         "vscode": {
             "settings": {
+                "extensions.verifySignature": false,
                 "editor.formatOnSave": true,
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff",
