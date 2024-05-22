@@ -1,4 +1,5 @@
 import hashlib
+import time
 from pathlib import Path
 from typing import Optional, Union
 
@@ -145,13 +146,11 @@ def anonymize_directory(input_dir: Path, output_dir: Path, **kwargs) -> None:
 def anonymize_webcam(
     anonymizer,
     max_res: int,
-    synthesis_kwargs,
-    visualize_detection,
+    synthesis_kwargs: dict,
+    visualize_detection: bool,
     track: bool,
     **kwargs,
-):
-    import time
-
+) -> None:
     cap = BufferlessVideoCapture(0, width=1920, height=1080)
     t = time.time()
     frames = 0
@@ -172,10 +171,11 @@ def anonymize_webcam(
 
         frames += 1
         delta = time.time() - t
-        fps = "?"
         if delta > 1e-6:
             fps = frames / delta
-        print(f"FPS: {fps:.3f}", end="\r")
+            print(f"FPS: {fps:.3f}", end="\r")
+        else:
+            print("FPS: inf", end="\r")
         cv2.imshow("frame", im_[:, :, ::-1])
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
@@ -328,12 +328,9 @@ def anonymize_path(
 
     if webcam:
         anonymize_webcam(**kwargs)
-        return
     if input_path.is_dir():
-        assert output_path.is_dir()
         anonymize_directory(input_path, output_path, **kwargs)
     elif input_path.is_file():
-        assert output_path.is_file()
         anonymize_file(input_path, output_path, **kwargs)
 
 
