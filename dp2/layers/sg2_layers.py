@@ -1,11 +1,11 @@
 from typing import List
+
 import numpy as np
-import torch
 import tops
+import torch
 import torch.nn.functional as F
-from sg3_torch_utils.ops import conv2d_resample
-from sg3_torch_utils.ops import upfirdn2d
-from sg3_torch_utils.ops import bias_act
+
+from sg3_torch_utils.ops import bias_act, conv2d_resample, upfirdn2d
 from sg3_torch_utils.ops.fma import fma
 
 

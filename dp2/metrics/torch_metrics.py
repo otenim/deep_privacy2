@@ -1,14 +1,16 @@
 import pickle
-import numpy as np
-import torch
 import time
 from pathlib import Path
-from dp2 import utils
+
 import tops
-from .lpips import SampleSimilarityLPIPS
+import torch
 from torch_fidelity.defaults import DEFAULTS as trf_defaults
 from torch_fidelity.metric_fid import fid_features_to_statistics, fid_statistics_to_metric
 from torch_fidelity.utils import create_feature_extractor
+
+from dp2 import utils
+
+from .lpips import SampleSimilarityLPIPS
 
 lpips_model = None
 fid_model = None

@@ -1,8 +1,9 @@
 import numpy as np
 import tops
 import torch
-from sg3_torch_utils.ops import upfirdn2d
 from tops import logger
+
+from sg3_torch_utils.ops import upfirdn2d
 
 
 def blur(im, init_sigma, t, batch, **kwargs):
@@ -18,7 +19,6 @@ def blur(im, init_sigma, t, batch, **kwargs):
 
 
 class ProjectedGANLoss:
-
     def __init__(
         self,
         D,

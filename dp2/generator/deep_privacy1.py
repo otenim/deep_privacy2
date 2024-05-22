@@ -1,13 +1,14 @@
+from typing import List
+
+import numpy as np
 import torch
 import torch.nn as nn
 from easydict import EasyDict
+
 from .base import BaseGenerator
-import numpy as np
-from typing import List
 
 
 class LatentVariableConcat(nn.Module):
-
     def __init__(self, conv2d_config):
         super().__init__()
 
@@ -24,7 +25,6 @@ def get_padding(kernel_size: int, dilation: int, stride: int):
 
 
 class Conv2d(nn.Conv2d):
-
     def __init__(
         self,
         in_channels,
@@ -89,14 +89,12 @@ class Conv2d(nn.Conv2d):
 
 
 class LeakyReLU(nn.LeakyReLU):
-
     def forward(self, _inp):
         x, mask = _inp
         return super().forward(x), mask
 
 
 class AvgPool2d(nn.AvgPool2d):
-
     def forward(self, _inp):
         x, mask, *args = _inp
         x = super().forward(x)
@@ -114,7 +112,6 @@ def up(x):
 
 
 class NearestUpsample(nn.Module):
-
     def forward(self, _inp):
         x, mask, *args = _inp
         x = up(x)
@@ -125,7 +122,6 @@ class NearestUpsample(nn.Module):
 
 
 class PixelwiseNormalization(nn.Module):
-
     def forward(self, _inp):
         x, mask = _inp
         norm = torch.rsqrt((x**2).mean(dim=1, keepdim=True) + 1e-7)
@@ -133,7 +129,6 @@ class PixelwiseNormalization(nn.Module):
 
 
 class Linear(nn.Linear):
-
     def __init__(self, in_features, out_features):
         super().__init__(in_features, out_features)
         self.linear = nn.Linear(in_features, out_features)
@@ -154,7 +149,6 @@ class Linear(nn.Linear):
 
 
 class OneHotPoseConcat(nn.Module):
-
     def forward(self, _inp):
         x, mask, batch = _inp
         landmarks = batch["landmarks_oh"]
@@ -171,7 +165,6 @@ def transition_features(x_old, x_new, transition_variable):
 
 
 class TransitionBlock(nn.Module):
-
     def forward(self, _inp):
         x, mask, batch = _inp
         x = transition_features(batch["x_old"], x, batch["transition_value"])
@@ -182,7 +175,6 @@ class TransitionBlock(nn.Module):
 
 
 class UnetSkipConnection(nn.Module):
-
     def __init__(
         self, conv2d_config: dict, in_channels: int, out_channels: int, resolution: int, residual: bool, enabled: bool
     ):
@@ -280,7 +272,6 @@ def build_convact(conv2d_config, *args, **kwargs):
 
 
 class ConvAct(nn.Module):
-
     def __init__(self, conv2d_config, *args, **kwargs):
         super().__init__()
         self._conv2d_config = conv2d_config
@@ -296,7 +287,6 @@ class ConvAct(nn.Module):
 
 
 class GatedConv(Conv2d):
-
     def __init__(self, in_channels, out_channels, *args, **kwargs):
         out_channels *= 2
         super().__init__(in_channels, out_channels, *args, **kwargs)
@@ -315,7 +305,6 @@ class GatedConv(Conv2d):
 
 
 class BasicBlock(nn.Module):
-
     def __init__(self, conv2d_config, resolution: int, in_channels: int, out_channels: List[int], residual: bool):
         super().__init__()
         assert len(out_channels) == 2
@@ -358,14 +347,12 @@ class BasicBlock(nn.Module):
 
 
 class PoseNormalize(nn.Module):
-
     @torch.no_grad()
     def forward(self, x):
         return x * 2 - 1
 
 
 class ScalarPoseFCNN(nn.Module):
-
     def __init__(self, pose_size, hidden_size, output_shape):
         super().__init__()
         pose_size = pose_size
@@ -399,7 +386,6 @@ class ScalarPoseFCNN(nn.Module):
 
 
 class Attention(nn.Module):
-
     def __init__(self, in_channels):
         super(Attention, self).__init__()
         # Channel multiplier
@@ -432,7 +418,6 @@ class Attention(nn.Module):
 
 
 class MSGGenerator(BaseGenerator):
-
     def __init__(self):
         super().__init__(512)
         max_imsize = 128

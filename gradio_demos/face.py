@@ -1,7 +1,8 @@
 import gradio
-from dp2 import utils
-from tops.config import instantiate
 import gradio.inputs
+from tops.config import instantiate
+
+from dp2 import utils
 from gradio_demos.modules import ExampleDemo, WebcamDemo
 
 cfg_face = utils.load_config("configs/anonymizers/face.py")

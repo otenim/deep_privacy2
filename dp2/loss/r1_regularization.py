@@ -1,5 +1,5 @@
-import torch
 import tops
+import torch
 
 
 def r1_regularization(
@@ -12,7 +12,7 @@ def r1_regularization(
     scaler: torch.cuda.amp.GradScaler,
     mask_out: bool,
     mask_out_scale: bool,
-    **kwargs
+    **kwargs,
 ):
     grad = torch.autograd.grad(
         outputs=scaler.scale(real_score),

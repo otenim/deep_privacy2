@@ -1,4 +1,3 @@
-import torch
 import tops
 import torch
 from torch.cuda.amp import custom_bwd, custom_fwd
@@ -24,7 +23,6 @@ def spatial_embed_keypoints(keypoints: torch.Tensor, x):
 
 
 class MaskOutput(torch.autograd.Function):
-
     @staticmethod
     @custom_fwd
     def forward(ctx, x_real, x_fake, mask):

@@ -7,7 +7,6 @@ import cv2
 import moviepy.editor as mp
 import numpy as np
 import tops
-import torch
 import tqdm
 from detectron2.data.detection_utils import _apply_exif_orientation
 from PIL import Image

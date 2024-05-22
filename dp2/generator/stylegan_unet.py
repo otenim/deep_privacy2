@@ -1,10 +1,13 @@
-import torch
+from typing import List, Tuple
+
 import numpy as np
+import torch
+
 from dp2.layers import Sequential
 from dp2.layers.sg2_layers import Conv2d, FullyConnectedLayer, ResidualBlock
+
 from .base import BaseStyleGAN
-from typing import List, Tuple
-from .utils import spatial_embed_keypoints, mask_output
+from .utils import mask_output, spatial_embed_keypoints
 
 
 def get_chsize(imsize, cnum, max_imsize, max_cnum_mul):
@@ -186,7 +189,6 @@ class StyleGANUnet(BaseStyleGAN):
 
 
 class ComodStyleUNet(StyleGANUnet):
-
     def __init__(self, min_comod_res=4, lr_multiplier_comod=1, **kwargs) -> None:
         super().__init__(**kwargs)
         min_fmap = min(self._encoder_out_shape[1:])

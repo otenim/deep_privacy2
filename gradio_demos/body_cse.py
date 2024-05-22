@@ -1,9 +1,9 @@
 import gradio
-from dp2 import utils
-from tops.config import instantiate
 import gradio.inputs
-from gradio_demos.modules import ExampleDemo, WebcamDemo
+from tops.config import instantiate
 
+from dp2 import utils
+from gradio_demos.modules import ExampleDemo, WebcamDemo
 
 cfg_body = utils.load_config("configs/anonymizers/FB_cse.py")
 anonymizer_body = instantiate(cfg_body.anonymizer, load_cache=False)

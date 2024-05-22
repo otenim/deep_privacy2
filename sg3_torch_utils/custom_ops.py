@@ -6,15 +6,15 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
-import os
 import glob
-import torch
-import torch.utils.cpp_extension
-import importlib
 import hashlib
+import importlib
+import os
 import shutil
 from pathlib import Path
 
+import torch
+import torch.utils.cpp_extension
 from torch.utils.file_baton import FileBaton
 
 # ----------------------------------------------------------------------------
@@ -92,9 +92,7 @@ def get_plugin(module_name, sources, **build_kwargs):
             for src in all_source_files:
                 with open(src, "rb") as f:
                     hash_md5.update(f.read())
-            build_dir = torch.utils.cpp_extension._get_build_directory(
-                module_name, verbose=verbose_build
-            )  # pylint: disable=protected-access
+            build_dir = torch.utils.cpp_extension._get_build_directory(module_name, verbose=verbose_build)  # pylint: disable=protected-access
             digest_build_dir = os.path.join(build_dir, hash_md5.hexdigest())
 
             if not os.path.isdir(digest_build_dir):

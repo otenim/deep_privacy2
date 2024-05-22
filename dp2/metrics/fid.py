@@ -1,13 +1,14 @@
-import tops
-from dp2 import utils
 from pathlib import Path
-from torch_fidelity.generative_model_modulewrapper import GenerativeModelModuleWrapper
+
+import tops
 import torch
 import torch_fidelity
+from torch_fidelity.generative_model_modulewrapper import GenerativeModelModuleWrapper
+
+from dp2 import utils
 
 
 class GeneratorIteratorWrapper(GenerativeModelModuleWrapper):
-
     def __init__(self, generator, dataloader, zero_z: bool, n_diverse: int):
         if isinstance(generator, utils.EMA):
             generator = generator.generator

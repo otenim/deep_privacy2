@@ -1,14 +1,16 @@
 import atexit
-from collections import defaultdict
 import logging
-import typing
-import torch
 import time
-from dp2.utils import vis_utils
-from dp2 import utils
-from tops import logger, checkpointer
+import typing
+from collections import defaultdict
+
 import tops
+import torch
 from easydict import EasyDict
+from tops import checkpointer, logger
+
+from dp2 import utils
+from dp2.utils import vis_utils
 
 
 def accumulate_gradients(params, fp16_ddp_accumulate):
@@ -78,7 +80,6 @@ class AverageMeter:
 
 
 class GANTrainer:
-
     def __init__(
         self,
         G: torch.nn.Module,

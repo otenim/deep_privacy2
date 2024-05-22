@@ -1,11 +1,11 @@
 import torch
-from .base import BaseGenerator
-from torchvision.transforms.functional import gaussian_blur
 import torch.nn.functional as F
+from torchvision.transforms.functional import gaussian_blur
+
+from .base import BaseGenerator
 
 
 class PixelationGenerator(BaseGenerator):
-
     def __init__(self, pixelation_size, **kwargs):
         super().__init__(z_channels=0)
         self.pixelation_size = pixelation_size
@@ -21,7 +21,6 @@ class PixelationGenerator(BaseGenerator):
 
 
 class MaskOutGenerator(BaseGenerator):
-
     def __init__(self, noise: str, **kwargs):
         super().__init__(z_channels=0)
         self.noise = noise
@@ -30,7 +29,6 @@ class MaskOutGenerator(BaseGenerator):
         self.latent_space = None
 
     def forward(self, img, condition, mask, **kwargs):
-
         if self.noise == "constant":
             img = torch.zeros_like(img)
         elif self.noise == "rand":
@@ -40,7 +38,6 @@ class MaskOutGenerator(BaseGenerator):
 
 
 class IdentityGenerator(BaseGenerator):
-
     def __init__(self):
         super().__init__(z_channels=0)
 
@@ -49,7 +46,6 @@ class IdentityGenerator(BaseGenerator):
 
 
 class GaussianBlurGenerator(BaseGenerator):
-
     def __init__(self):
         super().__init__(z_channels=0)
         self.sigma = 7

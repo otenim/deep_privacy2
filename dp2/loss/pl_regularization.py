@@ -1,13 +1,13 @@
-import torch
-import tops
 import numpy as np
+import tops
+import torch
+
 from sg3_torch_utils.ops import conv2d_gradfix
 
 pl_mean_total = torch.zeros([])
 
 
 class PLRegularization:
-
     def __init__(self, weight: float, batch_shrink: int, pl_decay: float, scale_by_mask: bool, **kwargs):
         self.pl_mean = torch.zeros([], device=tops.get_device())
         self.pl_weight = weight

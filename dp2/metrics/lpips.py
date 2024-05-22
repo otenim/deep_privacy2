@@ -1,10 +1,11 @@
-import torch
-import tops
 import sys
 from contextlib import redirect_stdout
+
+import tops
+import torch
 from torch_fidelity.sample_similarity_lpips import (
-    NetLinLayer,
     URL_VGG16_LPIPS,
+    NetLinLayer,
     VGG16features,
     normalize_tensor,
     spatial_average,
@@ -18,7 +19,6 @@ class SampleSimilarityLPIPS(torch.nn.Module):
     }
 
     def __init__(self):
-
         super().__init__()
         self.chns = [64, 128, 256, 512, 512]
         self.L = len(self.chns)

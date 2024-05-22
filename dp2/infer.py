@@ -3,6 +3,7 @@ import torch
 from tops import checkpointer
 from tops.config import instantiate
 from tops.logger import warn
+
 from dp2.generator.deep_privacy1 import MSGGenerator
 
 
@@ -39,7 +40,7 @@ def build_trained_generator(cfg, map_location=None):
     try:
         ckpt = checkpointer.load_checkpoint(cfg.checkpoint_dir, map_location="cpu")
         load_generator_state(ckpt, G, ckpt_mapper)
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         tops.logger.warn(f"Did not find generator checkpoint in: {cfg.checkpoint_dir}")
     return G.to(map_location)
 
@@ -53,7 +54,7 @@ def build_trained_discriminator(cfg, map_location=None):
         if hasattr(cfg, "ckpt_mapper_D"):
             ckpt["discriminator"] = instantiate(cfg.ckpt_mapper_D)(ckpt["discriminator"])
         D.load_state_dict(ckpt["discriminator"])
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         tops.logger.warn(f"Did not find discriminator checkpoint in: {cfg.checkpoint_dir}")
     return D
 

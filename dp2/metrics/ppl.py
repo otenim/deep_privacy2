@@ -1,11 +1,12 @@
 import numpy as np
-import torch
 import tops
-from dp2 import utils
-from torch_fidelity.helpers import get_kwarg, vassert
+import torch
 from torch_fidelity.defaults import DEFAULTS as PPL_DEFAULTS
-from torch_fidelity.utils import sample_random, batch_interp, create_sample_similarity
+from torch_fidelity.helpers import get_kwarg, vassert
+from torch_fidelity.utils import batch_interp, create_sample_similarity, sample_random
 from torchvision.transforms.functional import resize
+
+from dp2 import utils
 
 
 def slerp(a, b, t):

@@ -1,13 +1,13 @@
-import torch
 import numpy as np
-import tqdm
 import tops
+import torch
+import tqdm
+
 from ..layers import Module
 from ..layers.sg2_layers import FullyConnectedLayer
 
 
 class BaseGenerator(Module):
-
     def __init__(self, z_channels: int):
         super().__init__()
         self.z_channels = z_channels
@@ -135,7 +135,6 @@ class SG2StyleNet(torch.nn.Module):
 
 
 class BaseStyleGAN(BaseGenerator):
-
     def __init__(self, z_channels: int, w_dim: int):
         super().__init__(z_channels)
         self.style_net = SG2StyleNet(z_channels, w_dim)

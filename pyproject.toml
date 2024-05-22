@@ -11,4 +11,4 @@ target-version = "py38"
 quote-style = "double"
 
 [tool.ruff.lint]
-select = ["E", "F", "B", "I"]
+select = ["F", "I", "N", "W", "E"]

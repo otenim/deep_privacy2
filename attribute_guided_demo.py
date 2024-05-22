@@ -1,14 +1,16 @@
 from collections import defaultdict
-import gradio
+
 import click
-import numpy as np
-import torch
 import cv2
-from PIL import Image
-from dp2 import utils
-from tops.config import instantiate
-import tops
+import gradio
 import gradio.inputs
+import numpy as np
+import tops
+import torch
+from PIL import Image
+from tops.config import instantiate
+
+from dp2 import utils
 from stylemc import get_and_cache_direction, get_stylesW, init_affine_modules
 
 

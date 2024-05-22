@@ -1,15 +1,17 @@
 from collections import defaultdict
-import gradio
-import numpy as np
-import torch
+
 import cv2
-from PIL import Image
-from dp2 import utils
-from tops.config import instantiate
-import tops
+import gradio
 import gradio.inputs
+import numpy as np
+import tops
+import torch
+from PIL import Image
+from tops.config import instantiate
+
+from dp2 import utils
+from sg3_torch_utils.ops import bias_act, grid_sample_gradfix, upfirdn2d
 from stylemc import get_and_cache_direction, get_styles
-from sg3_torch_utils.ops import grid_sample_gradfix, bias_act, upfirdn2d
 
 grid_sample_gradfix.enabled = False
 bias_act.enabled = False
@@ -75,7 +77,7 @@ class GuidedDemo:
         update_identity = [True for i in range(len(update_identity))]
         img = utils.im2numpy(img)
         if show_boxes:
-            x0, y0, x1, y1 = [int(_) for _ in current_boxes[int(current_box_idx)]]
+            x0, y0, x1, y1 = (int(_) for _ in current_boxes[int(current_box_idx)])
             img = cv2.rectangle(img, (x0, y0), (x1, y1), (255, 0, 0), 1)
         return img, update_identity
 
@@ -92,16 +94,37 @@ class GuidedDemo:
         edits = defaultdict(defaultdict)
         cur_face_idx = -1 % len(current_boxes)
         img, update_identity = self.anonymize(
-            img, show_boxes, cur_face_idx, current_styles, current_boxes, update_identity, edits, cache_id=cache_id
+            img,
+            show_boxes,
+            cur_face_idx,
+            current_styles,
+            current_boxes,
+            update_identity,
+            edits,
+            cache_id=cache_id,
         )
         return img, current_styles, current_boxes, update_identity, edits, cur_face_idx
 
     def change_face(
-        self, change, cur_face_idx, current_boxes, input_image, show_boxes, current_styles, update_identity, edits
+        self,
+        change,
+        cur_face_idx,
+        current_boxes,
+        input_image,
+        show_boxes,
+        current_styles,
+        update_identity,
+        edits,
     ):
         cur_face_idx = (cur_face_idx + change) % len(current_boxes)
         img, update_identity = self.anonymize(
-            input_image, show_boxes, cur_face_idx, current_styles, current_boxes, update_identity, edits
+            input_image,
+            show_boxes,
+            cur_face_idx,
+            current_styles,
+            current_boxes,
+            update_identity,
+            edits,
         )
         return img, update_identity, cur_face_idx
 
@@ -120,7 +143,13 @@ class GuidedDemo:
         face_idx = face_idx % len(current_boxes)
         edits[face_idx][prompt] = strength
         img, update_identity = self.anonymize(
-            input_image, show_boxes, face_idx, current_styles, current_boxes, update_identity, edits
+            input_image,
+            show_boxes,
+            face_idx,
+            current_styles,
+            current_boxes,
+            update_identity,
+            edits,
         )
         return img, update_identity, edits
 
@@ -141,7 +170,8 @@ class GuidedDemo:
             next_ = gradio.Button("Next Person")
         with gradio.Row():
             text_prompt = gradio.Textbox(
-                placeholder=" | ".join(list(self.precomputed_edits)), label="Text Prompt for Edit"
+                placeholder=" | ".join(list(self.precomputed_edits)),
+                label="Text Prompt for Edit",
             )
             edit_strength = gradio.Slider(0, 5, step=0.01)
             add_btn = gradio.Button("Add Edit")
@@ -206,7 +236,6 @@ class GuidedDemo:
 
 
 class WebcamDemo:
-
     def __init__(self, anonymizer) -> None:
         self.anonymizer = anonymizer
         with gradio.Row():
@@ -248,7 +277,6 @@ class WebcamDemo:
 
 
 class ExampleDemo(WebcamDemo):
-
     def __init__(self, anonymizer) -> None:
         self.anonymizer = anonymizer
         with gradio.Row():
@@ -316,7 +344,6 @@ class ExampleDemo(WebcamDemo):
 
 
 class Information:
-
     def __init__(self) -> None:
         gradio.Markdown("## <center> Face Anonymization Architecture </center>")
         gradio.Markdown("---")

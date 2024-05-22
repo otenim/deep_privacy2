@@ -12,8 +12,8 @@ Only works on 2D images and assumes
 `mode='bilinear'`, `padding_mode='zeros'`, `align_corners=False`."""
 
 import torch
-from torch.cuda.amp import custom_bwd, custom_fwd
 from pkg_resources import parse_version
+from torch.cuda.amp import custom_bwd, custom_fwd
 
 # pylint: disable=redefined-builtin
 # pylint: disable=arguments-differ

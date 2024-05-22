@@ -1,14 +1,15 @@
 from functools import partial
 from typing import Iterable, List, Tuple
+
 import numpy as np
 import torch
 import torch.nn as nn
-from .base import BaseStyleGAN
-from sg3_torch_utils.ops import bias_act
-from dp2.layers import Sequential
 import torch.nn.functional as F
-from sg3_torch_utils.ops import fma, upfirdn2d
-from resize_right import resize as resize_r
+
+from dp2.layers import Sequential
+from sg3_torch_utils.ops import bias_act, fma, upfirdn2d
+
+from .base import BaseStyleGAN
 from .utils import spatial_embed_keypoints
 
 

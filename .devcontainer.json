@@ -12,14 +12,16 @@
     "customizations": {
         "vscode": {
             "settings": {
+                "editor.formatOnSave": true,
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff",
-                    "editor.formatOnSave": true,
                     "editor.codeActionsOnSave": {
-                        "source.organizeImports": true
+                        "source.fixAll.ruff": "explicit",
+                        "source.organizeImports.ruff": "explicit"
                     }
                 },
-                "python.defaultInterpreterPath": "/opt/conda/bin/python"
+                "python.defaultInterpreterPath": "/opt/conda/bin/python",
+                "files.insertFinalNewline": true
             },
             "extensions": [
                 "ms-python.python",

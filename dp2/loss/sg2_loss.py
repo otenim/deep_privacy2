@@ -1,15 +1,17 @@
 import functools
-import torch
+
 import tops
+import torch
 from tops import logger
+
 from dp2.utils import forward_D_fake
-from .utils import nsgan_d_loss, nsgan_g_loss
-from .r1_regularization import r1_regularization
+
 from .pl_regularization import PLRegularization
+from .r1_regularization import r1_regularization
+from .utils import nsgan_d_loss, nsgan_g_loss
 
 
 class StyleGAN2Loss:
-
     def __init__(
         self,
         D,

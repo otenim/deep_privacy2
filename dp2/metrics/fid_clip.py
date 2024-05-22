@@ -1,9 +1,11 @@
 import pickle
+from pathlib import Path
+
+import tops
 import torch
 import torchvision
-from pathlib import Path
+
 from dp2 import utils
-import tops
 
 try:
     import clip
