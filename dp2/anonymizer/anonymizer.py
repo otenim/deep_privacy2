@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Union
+from typing import Any, Dict, Optional, Type, Union
 
 import numpy as np
 import tops
@@ -40,22 +40,38 @@ class Anonymizer:
             ]
         }
         self.load_cache = load_cache
-        self.generator_cfgs = dict()
+        self.generator_cfgs: Dict[
+            Union[
+                Type[CSEPersonDetection],
+                Type[PersonDetection],
+                Type[FaceDetection],
+                Type[VehicleDetection],
+            ],
+            Any,
+        ] = {}
         if cse_person_G_cfg is not None:
             self.generator_cfgs[CSEPersonDetection] = load_config(cse_person_G_cfg)
-            self.generators[CSEPersonDetection] = build_trained_generator(self.generator_cfgs[CSEPersonDetection])
+            self.generators[CSEPersonDetection] = build_trained_generator(
+                self.generator_cfgs[CSEPersonDetection]
+            )
             tops.logger.log(f"Loaded generator from: {cse_person_G_cfg}")
         if person_G_cfg is not None:
             self.generator_cfgs[PersonDetection] = load_config(person_G_cfg)
-            self.generators[PersonDetection] = build_trained_generator(self.generator_cfgs[PersonDetection])
+            self.generators[PersonDetection] = build_trained_generator(
+                self.generator_cfgs[PersonDetection]
+            )
             tops.logger.log(f"Loaded generator from: {cse_person_G_cfg}")
         if face_G_cfg is not None:
             self.generator_cfgs[FaceDetection] = load_config(face_G_cfg)
-            self.generators[FaceDetection] = build_trained_generator(self.generator_cfgs[FaceDetection])
+            self.generators[FaceDetection] = build_trained_generator(
+                self.generator_cfgs[FaceDetection]
+            )
             tops.logger.log(f"Loaded generator from: {face_G_cfg}")
         if car_G_cfg is not None:
             self.generator_cfgs[VehicleDetection] = load_config(car_G_cfg)
-            self.generators[VehicleDetection] = build_trained_generator(self.generator_cfgs[VehicleDetection])
+            self.generators[VehicleDetection] = build_trained_generator(
+                self.generator_cfgs[VehicleDetection]
+            )
             tops.logger.log(f"Loaded generator from: {face_G_cfg}")
         self.dl = None
 
@@ -97,7 +113,9 @@ class Anonymizer:
         z = tops.to_cuda(torch.from_numpy(z))
         if not hasattr(G, "style_net"):
             if multi_modal_truncation:
-                logger.warn("The current generator does not support multi-modal truncation.")
+                logger.warn(
+                    "The current generator does not support multi-modal truncation."
+                )
             w = None
             z = G.get_z(z=z, truncation_value=truncation_value)
         elif multi_modal_truncation:
@@ -126,7 +144,9 @@ class Anonymizer:
         return anonymized_im
 
     @torch.no_grad()
-    def anonymize_detections(self, im, detection, update_identity=None, z_idx=None, **synthesis_kwargs):
+    def anonymize_detections(
+        self, im, detection, update_identity=None, z_idx=None, **synthesis_kwargs
+    ):
         G = self.generators[type(detection)]
         if G is None:
             return im
@@ -163,7 +183,9 @@ class Anonymizer:
             pad = [*pad, max(x1 - W, 0), max(y1 - H, 0)]
 
             def remove_pad(x):
-                return x[..., pad[1] : x.shape[-2] - pad[3], pad[0] : x.shape[-1] - pad[2]]
+                return x[
+                    ..., pad[1] : x.shape[-2] - pad[3], pad[0] : x.shape[-1] - pad[2]
+                ]
 
             gim = remove_pad(gim)
             mask = remove_pad(mask) > 0.5
@@ -174,9 +196,13 @@ class Anonymizer:
             im[:, y0:y1, x0:x1][mask] = gim[mask].round().clamp(0, 255).byte()
         return im
 
-    def visualize_detection(self, im: torch.Tensor, cache_id: str = None) -> torch.Tensor:
+    def visualize_detection(
+        self, im: torch.Tensor, cache_id: Optional[str] = None
+    ) -> torch.Tensor:
         im = tops.to_cuda(im)
-        all_detections = self.detector.forward_and_cache(im, cache_id, load_cache=self.load_cache)
+        all_detections = self.detector.forward_and_cache(
+            im, cache_id, load_cache=self.load_cache
+        )
         im = im.cpu()
         for det in all_detections:
             im = det.visualize(im)
@@ -186,7 +212,7 @@ class Anonymizer:
     def forward(
         self,
         im: torch.Tensor,
-        cache_id: str = None,
+        cache_id: Optional[str] = None,
         track=True,
         detections=None,
         **synthesis_kwargs,
@@ -196,7 +222,9 @@ class Anonymizer:
         all_detections = detections
         if detections is None:
             if self.load_cache:
-                all_detections = self.detector.forward_and_cache(im, cache_id, load_cache=True)
+                all_detections = self.detector.forward_and_cache(
+                    im, cache_id, load_cache=True
+                )
             else:
                 all_detections = self.detector(im)
         if hasattr(self, "tracker") and track:
