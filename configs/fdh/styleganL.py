@@ -1,8 +1,9 @@
 from tops.config import LazyCall as L
-from ..generators.stylegan_unet import generator
+
 from ..datasets.fdh import data
-from ..discriminators.sg2_discriminator import discriminator, G_optim, D_optim, loss_fnc
-from ..defaults import train, common, EMA
+from ..defaults import EMA, common, train
+from ..discriminators.sg2_discriminator import D_optim, G_optim, discriminator, loss_fnc
+from ..generators.stylegan_unet import generator
 
 train.max_images_to_train = int(50e6)
 train.batch_size = 64
