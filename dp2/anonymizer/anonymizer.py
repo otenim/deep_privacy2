@@ -1,19 +1,21 @@
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
+
 import numpy as np
-import torch
 import tops
+import torch
 import torchvision.transforms.functional as F
 from motpy import Detection, MultiObjectTracker
-from dp2.utils import load_config
-from dp2.infer import build_trained_generator
+from tops import logger
+
 from dp2.detection.structures import (
     CSEPersonDetection,
     FaceDetection,
     PersonDetection,
     VehicleDetection,
 )
-from tops import logger
+from dp2.infer import build_trained_generator
+from dp2.utils import load_config
 from stylemc import get_and_cache_direction, get_stylesW, init_affine_modules
 
 

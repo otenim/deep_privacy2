@@ -1,17 +1,18 @@
-import torch
-import tops
 import numpy as np
-from kornia.color import rgb_to_hsv
-from dp2 import utils
-from kornia.enhance import histogram
-from .anonymizer import Anonymizer
+import tops
+import torch
 import torchvision.transforms.functional as F
-from skimage.exposure import match_histograms
+from kornia.color import rgb_to_hsv
+from kornia.enhance import histogram
 from kornia.filters import gaussian_blur2d
+from skimage.exposure import match_histograms
+
+from dp2 import utils
+
+from .anonymizer import Anonymizer
 
 
 class LatentHistogramMatchAnonymizer(Anonymizer):
-
     def forward_G(
         self,
         G,
@@ -68,7 +69,6 @@ class LatentHistogramMatchAnonymizer(Anonymizer):
 
 
 class HistogramMatchAnonymizer(Anonymizer):
-
     def forward_G(self, G, batch, *args, **kwargs):
         rimg = batch["img"]
         anonymized_im = super().forward_G(G, batch, *args, **kwargs)
