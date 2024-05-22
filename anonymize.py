@@ -88,7 +88,7 @@ def anonymize_video(
     video.write_videofile(str(output_path))
 
 
-def resize(frame: Image.Image, max_res):
+def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
     if max_res is None:
         return frame
     f = max(*[x / max_res for x in frame.size], 1)
@@ -138,7 +138,7 @@ def anonymize_image(
         print(f"Saved to: {output_path}")
 
 
-def anonymize_file(input_path: Path, output_path: Optional[Path], **kwargs):
+def anonymize_file(input_path: Path, output_path: Optional[Path], **kwargs) -> None:
     if output_path is not None and output_path.is_file():
         logger.warn(f"Overwriting previous file: {output_path}")
     if tops.is_image(input_path):
@@ -149,14 +149,13 @@ def anonymize_file(input_path: Path, output_path: Optional[Path], **kwargs):
         logger.log(f"Filepath not a video or image file: {input_path}")
 
 
-def anonymize_directory(input_dir: Path, output_dir: Path, **kwargs):
+def anonymize_directory(input_dir: Path, output_dir: Path, **kwargs) -> None:
     for childname in tqdm.tqdm(input_dir.iterdir()):
         childpath = input_dir.joinpath(childname.name)
         output_path = output_dir.joinpath(childname.name)
         if not childpath.is_file():
             anonymize_directory(childpath, output_path, **kwargs)
         else:
-            assert childpath.is_file()
             anonymize_file(childpath, output_path, **kwargs)
 
 
@@ -200,21 +199,23 @@ def anonymize_webcam(
 
 
 @click.command()
-@click.argument("config_path", type=click.Path(exists=True))
+@click.argument("config_path", type=click.Path(exists=True, dir_okay=False, file_okay=True))
 @click.option(
     "-i",
     "--input_path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=True, file_okay=True),
     help="Input path. Accepted inputs: images, videos, directories.",
 )
 @click.option(
     "-o",
     "--output_path",
     default=None,
-    type=click.Path(),
+    type=click.Path(exists=False),
     help="Output path to save. Can be directory or file.",
 )
-@click.option("-v", "--visualize", default=False, is_flag=True, help="Visualize the result")
-@click.option("--max-res", default=None, type=int, help="Maximum resolution  of height/wideo")
+@click.option("-v", "--visualize", default=False, is_flag=True, help="Visualize the result.")
+@click.option("--max-res", default=None, type=int, help="Maximum resolution of height/width.")
 @click.option(
     "--start-time",
     "--st",

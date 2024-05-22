@@ -1,4 +1,4 @@
-from .face_fdf128 import anonymizer, common, detector
+from .face_fdf128 import anonymizer, common
 from dp2.detection.deep_privacy1_detector import DeepPrivacy1Detector
 from tops.config import LazyCall as L
 
