@@ -6,6 +6,7 @@ import tops
 import torch
 import torchvision.transforms.functional as F
 from motpy import Detection, MultiObjectTracker
+from omegaconf import DictConfig
 from tops import logger
 
 from dp2.detection.structures import (
@@ -47,7 +48,7 @@ class Anonymizer:
                 Type[FaceDetection],
                 Type[VehicleDetection],
             ],
-            Any,
+            DictConfig,
         ] = {}
         if cse_person_G_cfg is not None:
             self.generator_cfgs[CSEPersonDetection] = load_config(cse_person_G_cfg)
@@ -63,6 +64,7 @@ class Anonymizer:
             tops.logger.log(f"Loaded generator from: {cse_person_G_cfg}")
         if face_G_cfg is not None:
             self.generator_cfgs[FaceDetection] = load_config(face_G_cfg)
+            print(type(self.generator_cfgs[FaceDetection]))
             self.generators[FaceDetection] = build_trained_generator(
                 self.generator_cfgs[FaceDetection]
             )
