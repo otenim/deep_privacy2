@@ -14,16 +14,20 @@
     "customizations": {
         "vscode": {
             "settings": {
+                "ruff.organizeImports": true,
+                "ruff.fixAll": true,
+                "ruff.lint.enable": true,
+                "ruff.lint.run": "onSave",
                 "extensions.verifySignature": false,
                 "editor.formatOnSave": true,
+                "editor.codeActionsOnSave": {
+                    "source.fixAll": "explicit",
+                    "source.organizeImports": "explicit"
+                },
                 "[python]": {
                     "editor.defaultFormatter": "charliermarsh.ruff",
-                    "editor.codeActionsOnSave": {
-                        "source.fixAll.ruff": "explicit",
-                        "source.organizeImports.ruff": "explicit"
-                    }
                 },
-                "python.defaultInterpreterPath": "/opt/conda/bin/python",
+                "python.defaultInterpreterPath": "/usr/bin/python",
                 "files.insertFinalNewline": true
             },
             "extensions": [
@@ -32,7 +36,8 @@
                 "oderwat.indent-rainbow",
                 "tamasfe.even-better-toml",
                 "ms-azuretools.vscode-docker",
-                "charliermarsh.ruff"
+                "charliermarsh.ruff",
+                "ms-python.black-formatter"
             ]
         }
     }
