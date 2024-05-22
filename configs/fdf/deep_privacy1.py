@@ -1,5 +1,7 @@
 from tops.config import LazyCall as L
+
 from dp2.generator.deep_privacy1 import MSGGenerator
+
 from ..datasets.fdf128 import data
 from ..defaults import common, train
 

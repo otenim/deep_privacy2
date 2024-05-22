@@ -1,14 +1,14 @@
-from ..discriminators.projected_discriminator import (
-    G_optim,
-    D_optim,
-    loss_fnc,
-    discriminator,
-    VIT_PATCH_MAE_LARGE,
-    RN50_CLIP,
-)
-from ..defaults import common, EMA, train
 from ..datasets.fdf128_wds.fdf128 import data
-from ..generators.triagan import generator, ckpt_mapper
+from ..defaults import EMA, common, train
+from ..discriminators.projected_discriminator import (
+    RN50_CLIP,
+    VIT_PATCH_MAE_LARGE,
+    D_optim,
+    G_optim,
+    discriminator,
+    loss_fnc,
+)
+from ..generators.triagan import ckpt_mapper, generator
 
 train.update(
     batch_size=128,

@@ -1,7 +1,7 @@
-from ..generators.stylegan_unet import generator
 from ..datasets.fdf256 import data
-from ..discriminators.sg2_discriminator import discriminator, G_optim, D_optim, loss_fnc
-from ..defaults import train, common, EMA
+from ..defaults import EMA, common, train
+from ..discriminators.sg2_discriminator import D_optim, G_optim, discriminator, loss_fnc
+from ..generators.stylegan_unet import generator
 
 train.max_images_to_train = int(35e6)
 G_optim.lr = 0.002

@@ -1,8 +1,9 @@
-from ..discriminators.sg2_discriminator import discriminator, G_optim, D_optim, loss_fnc
-from ..datasets.fdf128 import data
-from ..generators.stylegan_unet import generator
-from ..defaults import train, common, EMA
 from tops.config import LazyCall as L
+
+from ..datasets.fdf128 import data
+from ..defaults import EMA, common, train
+from ..discriminators.sg2_discriminator import D_optim, G_optim, discriminator, loss_fnc
+from ..generators.stylegan_unet import generator
 
 G_optim.lr = 0.002
 D_optim.lr = 0.002
