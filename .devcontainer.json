@@ -7,7 +7,9 @@
     "workspaceMount": "source=${localWorkspaceFolder},target=/home/testuser/dev,type=bind,consistency=cached",
     "runArgs": [
         "--gpus",
-        "all"
+        "all",
+        "--ipc",
+        "host"
     ],
     "customizations": {
         "vscode": {

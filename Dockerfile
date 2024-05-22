@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:22.08-py3
+FROM nvcr.io/nvidia/pytorch:22.12-py3
 
 ARG USERNAME=testuser
 ARG USER_UID=1000
