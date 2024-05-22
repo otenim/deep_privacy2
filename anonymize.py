@@ -1,6 +1,6 @@
 import hashlib
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import click
 import cv2
@@ -43,7 +43,6 @@ def anonymize_video(
     video_path,
     output_path: Path,
     anonymizer,
-    visualize: bool,
     max_res: int,
     start_time: int,
     fps: int,
@@ -68,11 +67,6 @@ def anonymize_video(
         else:
             anonymized = anonymizer(frame, **synthesis_kwargs)
         anonymized = utils.im2numpy(anonymized)
-        if visualize:
-            cv2.imshow("frame", anonymized[:, :, ::-1])
-            key = cv2.waitKey(1)
-            if key == ord("q"):
-                exit()
         return anonymized
 
     video: mp.VideoClip = video.subclip(start_time, end_time)
@@ -99,19 +93,17 @@ def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
 
 
 def anonymize_image(
-    image_path,
+    image_path: Path,
     output_path: Path,
-    visualize: bool,
     anonymizer,
     max_res: int,
     visualize_detection: bool,
-    synthesis_kwargs,
+    synthesis_kwargs: dict,
     **kwargs,
 ):
     with Image.open(image_path) as im:
         im = _apply_exif_orientation(im)
         orig_im_mode = im.mode
-
         im = im.convert("RGB")
         im = resize(im, max_res)
     im = np.array(im)
@@ -123,14 +115,6 @@ def anonymize_image(
     else:
         im_ = anonymizer(im, **synthesis_kwargs)
     im_ = utils.im2numpy(im_)
-    if visualize:
-        while True:
-            cv2.imshow("frame", im_[:, :, ::-1])
-            key = cv2.waitKey(0)
-            if key == ord("q"):
-                break
-            elif key == ord("u"):
-                im_ = utils.im2numpy(anonymizer(im, **synthesis_kwargs))
     im = Image.fromarray(im_).convert(orig_im_mode)
     if output_path is not None:
         output_path.parent.mkdir(exist_ok=True, parents=True)
@@ -138,7 +122,7 @@ def anonymize_image(
         print(f"Saved to: {output_path}")
 
 
-def anonymize_file(input_path: Path, output_path: Optional[Path], **kwargs) -> None:
+def anonymize_file(input_path: Path, output_path: Path, **kwargs) -> None:
     if output_path is not None and output_path.is_file():
         logger.warn(f"Overwriting previous file: {output_path}")
     if tops.is_image(input_path):
@@ -199,23 +183,21 @@ def anonymize_webcam(
 
 
 @click.command()
-@click.argument("config_path", type=click.Path(exists=True, dir_okay=False, file_okay=True))
-@click.option(
-    "-i",
-    "--input_path",
-    default=None,
-    type=click.Path(exists=True, dir_okay=True, file_okay=True),
-    help="Input path. Accepted inputs: images, videos, directories.",
+@click.argument(
+    "config-path",
+    type=click.Path(exists=True, dir_okay=False, file_okay=True, path_type=Path),
+)
+@click.argument(
+    "input-path",
+    type=click.Path(exists=True, dir_okay=True, file_okay=True, path_type=Path),
+)
+@click.argument(
+    "output-path",
+    type=click.Path(exists=False, dir_okay=True, file_okay=True, path_type=Path),
 )
 @click.option(
-    "-o",
-    "--output_path",
-    default=None,
-    type=click.Path(exists=False),
-    help="Output path to save. Can be directory or file.",
+    "--max-res", default=None, type=int, help="Maximum resolution of height/width."
 )
-@click.option("-v", "--visualize", default=False, is_flag=True, help="Visualize the result.")
-@click.option("--max-res", default=None, type=int, help="Maximum resolution of height/width.")
 @click.option(
     "--start-time",
     "--st",
@@ -266,7 +248,7 @@ def anonymize_webcam(
 )
 @click.option(
     "-t",
-    "--truncation_value",
+    "--truncation-value",
     default=0,
     type=click.FloatRange(0, 1),
     help="Latent interpolation truncation value.",
@@ -277,7 +259,9 @@ def anonymize_webcam(
     is_flag=True,
     help="Track detections over frames. Will use the same latent variable (z) for tracked identities.",
 )
-@click.option("--seed", default=0, type=int, help="Set random seed for generating images.")
+@click.option(
+    "--seed", default=0, type=int, help="Set random seed for generating images."
+)
 @click.option(
     "--person-generator",
     default=None,
@@ -290,7 +274,9 @@ def anonymize_webcam(
     help="Config path to CSE-guided person generator",
     type=click.Path(),
 )
-@click.option("--webcam", default=False, is_flag=True, help="Read image from webcam feed.")
+@click.option(
+    "--webcam", default=False, is_flag=True, help="Read image from webcam feed."
+)
 @click.option(
     "--text-prompt",
     default=None,
@@ -304,21 +290,18 @@ def anonymize_webcam(
     help="Strength for attribute-guided anonymization",
 )
 def anonymize_path(
-    config_path,
-    input_path,
-    output_path,
+    config_path: Path,
+    input_path: Path,
+    output_path: Path,
     detection_score_threshold: float,
     visualize_detection: bool,
     cache: bool,
     seed: int,
-    person_generator: str,
-    cse_person_generator: str,
+    person_generator: Union[str, None],
+    cse_person_generator: Union[str, None],
     webcam: bool,
     **kwargs,
-):
-    """
-    config_path: Specify the path to the anonymization model to use.
-    """
+) -> None:
     tops.set_seed(seed)
     cfg = utils.load_config(config_path)
     if person_generator is not None:
@@ -329,14 +312,16 @@ def anonymize_path(
     utils.print_config(cfg)
 
     anonymizer = instantiate(cfg.anonymizer, load_cache=cache)
-    synthesis_kwargs = [
-        "amp",
-        "multi_modal_truncation",
-        "truncation_value",
-        "text_prompt",
-        "text_prompt_strength",
-    ]
-    synthesis_kwargs = {k: kwargs.pop(k) for k in synthesis_kwargs}
+    synthesis_kwargs = {
+        k: kwargs.pop(k)
+        for k in [
+            "amp",
+            "multi_modal_truncation",
+            "truncation_value",
+            "text_prompt",
+            "text_prompt_strength",
+        ]
+    }
 
     kwargs["anonymizer"] = anonymizer
     kwargs["visualize_detection"] = visualize_detection
@@ -345,15 +330,11 @@ def anonymize_path(
     if webcam:
         anonymize_webcam(**kwargs)
         return
-    input_path = Path(input_path)
-    output_path = Path(output_path) if output_path is not None else None
-    if output_path is None and not kwargs["visualize"]:
-        logger.log("Output path not set. Setting visualize to True")
-        kwargs["visualize"] = True
     if input_path.is_dir():
-        assert output_path is None or not output_path.is_file()
+        assert output_path.is_dir()
         anonymize_directory(input_path, output_path, **kwargs)
-    else:
+    elif input_path.is_file():
+        assert output_path.is_file()
         anonymize_file(input_path, output_path, **kwargs)
 
 
