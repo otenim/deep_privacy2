@@ -15,6 +15,7 @@ from tops import logger
 from tops.config import instantiate
 
 from dp2 import utils
+from dp2.anonymizer import Anonymizer
 from dp2.utils.bufferless_video_capture import BufferlessVideoCapture
 
 
@@ -41,18 +42,18 @@ class ImageIndexTracker:
 
 
 def anonymize_video(
-    video_path,
+    video_path: Path,
     output_path: Path,
-    anonymizer,
+    anonymizer: Anonymizer,
     max_res: int,
     fps: Union[int, None],
     start_time: int,
     end_time: Union[int, None],
     visualize_detection: bool,
     track: bool,
-    synthesis_kwargs,
+    synthesis_kwargs: dict,
     **kwargs,
-):
+) -> None:
     video: mp.VideoFileClip
     video = mp.VideoFileClip(str(video_path))
     if track:
@@ -95,7 +96,7 @@ def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
 def anonymize_image(
     image_path: Path,
     output_path: Path,
-    anonymizer,
+    anonymizer: Anonymizer,
     max_res: int,
     visualize_detection: bool,
     synthesis_kwargs: dict,
@@ -144,7 +145,7 @@ def anonymize_directory(input_dir: Path, output_dir: Path, **kwargs) -> None:
 
 
 def anonymize_webcam(
-    anonymizer,
+    anonymizer: Anonymizer,
     max_res: int,
     synthesis_kwargs: dict,
     visualize_detection: bool,
@@ -194,9 +195,7 @@ def anonymize_webcam(
     "output-path",
     type=click.Path(exists=False, dir_okay=True, file_okay=True, path_type=Path),
 )
-@click.option(
-    "--max-res", default=None, type=int, help="Maximum resolution of height/width."
-)
+@click.option("--max-res", default=None, type=int, help="Maximum resolution of height/width.")
 @click.option(
     "--start-time",
     "--st",
@@ -258,9 +257,7 @@ def anonymize_webcam(
     is_flag=True,
     help="Track detections over frames. Will use the same latent variable (z) for tracked identities.",
 )
-@click.option(
-    "--seed", default=0, type=int, help="Set random seed for generating images."
-)
+@click.option("--seed", default=0, type=int, help="Set random seed for generating images.")
 @click.option(
     "--person-generator",
     default=None,
@@ -273,9 +270,7 @@ def anonymize_webcam(
     help="Config path to CSE-guided person generator",
     type=click.Path(),
 )
-@click.option(
-    "--webcam", default=False, is_flag=True, help="Read image from webcam feed."
-)
+@click.option("--webcam", default=False, is_flag=True, help="Read image from webcam feed.")
 @click.option(
     "--text-prompt",
     default=None,
@@ -310,7 +305,7 @@ def anonymize_path(
     cfg.detector.score_threshold = detection_score_threshold
     utils.print_config(cfg)
 
-    anonymizer = instantiate(cfg.anonymizer, load_cache=cache)
+    anonymizer: Anonymizer = instantiate(cfg.anonymizer, load_cache=cache)
     synthesis_kwargs = {
         k: kwargs.pop(k)
         for k in [
