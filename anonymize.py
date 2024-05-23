@@ -19,18 +19,6 @@ from dp2.anonymizer import Anonymizer
 from dp2.utils.bufferless_video_capture import BufferlessVideoCapture
 
 
-def show_video(video_path):
-    video_cap = cv2.VideoCapture(str(video_path))
-    while video_cap.isOpened():
-        _, frame = video_cap.read()
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(25)
-        if key == ord("q"):
-            break
-    video_cap.release()
-    cv2.destroyAllWindows()
-
-
 class ImageIndexTracker:
     def __init__(self, fn) -> None:
         self.fn = fn
@@ -41,17 +29,27 @@ class ImageIndexTracker:
         return self.fn(frame, self.idx - 1)
 
 
+def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
+    if max_res is None:
+        return frame
+    f = max(*[x / max_res for x in frame.size], 1)
+    if f == 1:
+        return frame
+    new_shape = [int(x / f) for x in frame.size]
+    return frame.resize(new_shape, resample=Image.BILINEAR)
+
+
 def anonymize_video(
     video_path: Path,
     output_path: Path,
     anonymizer: Anonymizer,
-    max_res: int,
-    fps: Union[int, None],
-    start_time: int,
-    end_time: Union[int, None],
-    visualize_detection: bool,
-    track: bool,
     synthesis_kwargs: dict,
+    visualize_detection: bool = False,
+    track: bool = False,
+    start_time: int = 0,
+    end_time: Optional[int] = None,
+    fps: Optional[int] = None,
+    max_res: Optional[int] = None,
     **kwargs,
 ) -> None:
     video: mp.VideoFileClip
@@ -83,23 +81,13 @@ def anonymize_video(
     video.write_videofile(output_path)
 
 
-def resize(frame: Image.Image, max_res: Optional[int] = None) -> Image.Image:
-    if max_res is None:
-        return frame
-    f = max(*[x / max_res for x in frame.size], 1)
-    if f == 1:
-        return frame
-    new_shape = [int(x / f) for x in frame.size]
-    return frame.resize(new_shape, resample=Image.BILINEAR)
-
-
 def anonymize_image(
     image_path: Path,
     output_path: Path,
     anonymizer: Anonymizer,
-    max_res: int,
-    visualize_detection: bool,
     synthesis_kwargs: dict,
+    visualize_detection: bool = False,
+    max_res: Optional[int] = None,
     **kwargs,
 ) -> None:
     with Image.open(image_path) as im:
@@ -159,7 +147,7 @@ def anonymize_webcam(
         anonymizer.initialize_tracker(fps=5)  # FPS used for tracking objects
     while True:
         # Capture frame-by-frame
-        ret, frame = cap.read()
+        _, frame = cap.read()
         frame = Image.fromarray(frame[:, :, ::-1])
         frame = resize(frame, max_res)
         frame = np.array(frame)
@@ -296,7 +284,10 @@ def anonymize_path(
     webcam: bool,
     **kwargs,
 ) -> None:
+    # Set seed value
     tops.set_seed(seed)
+
+    # Load config
     cfg = utils.load_config(config_path)
     if person_generator is not None:
         cfg.anonymizer.person_G_cfg = person_generator
@@ -305,7 +296,10 @@ def anonymize_path(
     cfg.detector.score_threshold = detection_score_threshold
     utils.print_config(cfg)
 
+    # Instantiate anonymizer
     anonymizer: Anonymizer = instantiate(cfg.anonymizer, load_cache=cache)
+
+    # Anonymize
     synthesis_kwargs = {
         k: kwargs.pop(k)
         for k in [
@@ -316,11 +310,9 @@ def anonymize_path(
             "text_prompt_strength",
         ]
     }
-
     kwargs["anonymizer"] = anonymizer
     kwargs["visualize_detection"] = visualize_detection
     kwargs["synthesis_kwargs"] = synthesis_kwargs
-
     if webcam:
         anonymize_webcam(**kwargs)
     if input_path.is_dir():
