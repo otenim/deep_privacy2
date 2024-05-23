@@ -1,11 +1,11 @@
 from typing import Dict
-import torch
+
 import tops
+import torch
 import torch.nn as nn
 
 
 class Sequential(nn.Sequential):
-
     def forward(self, x: Dict[str, torch.Tensor], **kwargs) -> Dict[str, torch.Tensor]:
         for module in self:
             x = module(x, **kwargs)
@@ -13,7 +13,6 @@ class Sequential(nn.Sequential):
 
 
 class Module(nn.Module):
-
     def __init__(self, *args, **kwargs):
         super().__init__()
 
