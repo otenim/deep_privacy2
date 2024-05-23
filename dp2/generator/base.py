@@ -1,3 +1,5 @@
+from typing import Optional
+
 import numpy as np
 import tops
 import torch
@@ -16,10 +18,10 @@ class BaseGenerator(Module):
     @torch.no_grad()
     def get_z(
         self,
-        x: torch.Tensor = None,
-        z: torch.Tensor = None,
-        truncation_value: float = None,
-        batch_size: int = None,
+        x: Optional[torch.Tensor] = None,
+        z: Optional[torch.Tensor] = None,
+        truncation_value: Optional[float] = None,
+        batch_size: Optional[int] = None,
         dtype=None,
         device=None,
     ) -> torch.Tensor:
@@ -33,8 +35,8 @@ class BaseGenerator(Module):
         if device is None:
             device = tops.get_device()
         if truncation_value == 0:
-            return torch.zeros((batch_size, self.z_channels), device=device, dtype=dtype)
-        z = torch.randn((batch_size, self.z_channels), device=device, dtype=dtype)
+            return torch.zeros([batch_size, self.z_channels], device=device, dtype=dtype)
+        z = torch.randn([batch_size, self.z_channels], device=device, dtype=dtype)
         if truncation_value is None:
             return z
         while z.abs().max() > truncation_value:
@@ -42,7 +44,7 @@ class BaseGenerator(Module):
             z[m] = torch.rand_like(z)[m]
         return z
 
-    def sample(self, truncation_value, z=None, **kwargs):
+    def sample(self, truncation_value: float, z: Optional[torch.Tensor] = None, **kwargs):
         """
         Samples via interpolating to the mean (0).
         """
