@@ -1,10 +1,10 @@
 import queue
 import threading
+
 import cv2
 
 
 class BufferlessVideoCapture:
-
     def __init__(self, name, width=None, height=None):
         self.cap = cv2.VideoCapture(name)
         if width is not None and height is not None:
