@@ -189,7 +189,9 @@ def upfirdn2d(x, f, up=1, down=1, padding=0, flip_filter=False, gain=1, impl="cu
 
 
 @misc.profiled_function
-def _upfirdn2d_ref(x, f, up: int = 1, down: int = 1, padding: int = 0, flip_filter: bool = False, gain: float = 1.0):
+def _upfirdn2d_ref(
+    x: torch.Tensor, f, up: int = 1, down: int = 1, padding: int = 0, flip_filter: bool = False, gain: float = 1.0
+) -> torch.Tensor:
     """Slow reference implementation of `upfirdn2d()` using standard PyTorch ops."""
     # Validate arguments.
     assert isinstance(x, torch.Tensor) and x.ndim == 4
