@@ -11,6 +11,7 @@
 import os
 import traceback
 import warnings
+from typing import Sequence, Tuple, Union
 
 import numpy as np
 import torch
@@ -51,16 +52,23 @@ def _parse_scaling(scaling):
     return sx, sy
 
 
-def _parse_padding(padding):
+def _parse_padding(
+    padding: Union[int, Sequence[int]],
+) -> Tuple[int, int, int, int]:
     if isinstance(padding, int):
-        padding = [padding, padding]
-    assert isinstance(padding, (list, tuple))
-    assert all(isinstance(x, int) for x in padding)
-    if len(padding) == 2:
-        padx, pady = padding
-        padding = [padx, padx, pady, pady]
-    padx0, padx1, pady0, pady1 = padding
-    return padx0, padx1, pady0, pady1
+        if padding < 0:
+            raise ValueError(f'Expected "padding" >= 0, but ={padding}.')
+        return padding, padding, padding, padding
+    elif isinstance(padding, (list, tuple)):
+        if not all([pad >= 0 for pad in padding]):
+            raise ValueError('Negative value is found in "padding", which is not allowed.')
+        if len(padding) == 2:
+            padx, pady = padding
+            return padx, padx, pady, pady
+        elif len(padding) == 4:
+            padx0, padx1, pady0, pady1 = padding
+            return padx0, padx1, pady0, pady1
+    raise ValueError('"padding" is expected to be an int or an int sequence of length=2/4.')
 
 
 def _get_filter_size(f):
@@ -181,7 +189,7 @@ def upfirdn2d(x, f, up=1, down=1, padding=0, flip_filter=False, gain=1, impl="cu
 
 
 @misc.profiled_function
-def _upfirdn2d_ref(x, f, up=1, down=1, padding=0, flip_filter=False, gain=1):
+def _upfirdn2d_ref(x, f, up: int = 1, down: int = 1, padding: int = 0, flip_filter: bool = False, gain: float = 1.0):
     """Slow reference implementation of `upfirdn2d()` using standard PyTorch ops."""
     # Validate arguments.
     assert isinstance(x, torch.Tensor) and x.ndim == 4
@@ -200,8 +208,7 @@ def _upfirdn2d_ref(x, f, up=1, down=1, padding=0, flip_filter=False, gain=1):
     x = x.reshape([batch_size, num_channels, in_height * upy, in_width * upx])
 
     # Pad or crop.
-    x = torch.nn.functional.pad(x, [max(padx0, 0), max(padx1, 0), max(pady0, 0), max(pady1, 0)])
-    x = x[:, :, max(-pady0, 0) : x.shape[2] - max(-pady1, 0), max(-padx0, 0) : x.shape[3] - max(-padx1, 0)]
+    x = torch.nn.functional.pad(x, [padx0, padx1, pady0, pady1])
 
     # Setup filter.
     f = f * (gain ** (f.ndim / 2))
