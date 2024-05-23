@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import tops
@@ -52,25 +52,25 @@ class FullyConnectedLayer(torch.nn.Module):
 class Conv2d(torch.nn.Module):
     def __init__(
         self,
-        in_channels,  # Number of input channels.
-        out_channels,  # Number of output channels.
-        kernel_size=3,  # Convolution kernel size.
-        up=1,  # Integer upsampling factor.
-        down=1,  # Integer downsampling factor
-        activation="lrelu",  # Activation function: 'relu', 'lrelu', etc.
-        resample_filter=[1, 3, 3, 1],  # Low-pass filter to apply when resampling activations.
-        conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
-        bias=True,
-        norm=False,
-        lr_multiplier=1,
-        bias_init=0,
-        w_dim=None,
-        gain=1,
-    ):
+        in_channels: int,  # Number of input channels.
+        out_channels: int,  # Number of output channels.
+        kernel_size: int = 3,  # Convolution kernel size.
+        up: int = 1,  # Integer upsampling factor.
+        down: int = 1,  # Integer downsampling factor
+        activation: str = "lrelu",  # Activation function: 'relu', 'lrelu', etc.
+        resample_filter: List[int] = [1, 3, 3, 1],  # Low-pass filter to apply when resampling activations.
+        conv_clamp: Optional[float] = None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
+        bias: bool = True,
+        norm: bool = False,
+        lr_multiplier: float = 1.0,
+        bias_init: float = 0.0,
+        w_dim: Optional[int] = None,
+        gain: float = 1.0,
+    ) -> None:
         super().__init__()
         if norm:
+            # TODO: fix this bug
             self.norm = torch.nn.InstanceNorm2d(None)
-        assert norm in [True, False]
         self.up = up
         self.down = down
         self.activation = activation
@@ -105,7 +105,7 @@ class Conv2d(torch.nn.Module):
             self.affine = FullyConnectedLayer(w_dim, in_channels, bias_init=1)
             self.affine_beta = FullyConnectedLayer(w_dim, in_channels, bias_init=0)
 
-    def forward(self, x, w=None, s=None):
+    def forward(self, x: torch.Tensor, w: Optional[torch.Tensor] = None, s=None) -> torch.Tensor:
         tops.assert_shape(x, [None, self.weight.shape[1], None, None])
         if s is not None:
             s = s[..., : self.in_channels * 2]
@@ -133,45 +133,43 @@ class Conv2d(torch.nn.Module):
 class Block(torch.nn.Module):
     def __init__(
         self,
-        in_channels,  # Number of input channels, 0 = first block.
-        out_channels,  # Number of output channels.
-        conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
-        up=1,
-        down=1,
-        **layer_kwargs,  # Arguments for SynthesisLayer.
-    ):
+        in_channels: int,  # Number of input channels, 0 = first block.
+        out_channels: int,  # Number of output channels.
+        conv_clamp: Optional[float] = None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
+        up: int = 1,
+        down: int = 1,
+        **kwargs,  # Arguments for SynthesisLayer.
+    ) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.down = down
-        self.conv0 = Conv2d(in_channels, out_channels, down=down, conv_clamp=conv_clamp, **layer_kwargs)
-        self.conv1 = Conv2d(out_channels, out_channels, up=up, conv_clamp=conv_clamp, **layer_kwargs)
+        self.conv0 = Conv2d(in_channels, out_channels, down=down, conv_clamp=conv_clamp, **kwargs)
+        self.conv1 = Conv2d(out_channels, out_channels, up=up, conv_clamp=conv_clamp, **kwargs)
 
-    def forward(self, x, **layer_kwargs):
-        x = self.conv0(x, **layer_kwargs)
-        x = self.conv1(x, **layer_kwargs)
+    def forward(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
+        x = self.conv0(x, **kwargs)
+        x = self.conv1(x, **kwargs)
         return x
 
 
 class ResidualBlock(torch.nn.Module):
     def __init__(
         self,
-        in_channels,  # Number of input channels, 0 = first block.
-        out_channels,  # Number of output channels.
-        conv_clamp=None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
-        up=1,
-        down=1,
-        gain_out=np.sqrt(0.5),
+        in_channels: int,  # Number of input channels, 0 = first block.
+        out_channels: int,  # Number of output channels.
+        conv_clamp: Optional[float] = None,  # Clamp the output of convolution layers to +-X, None = disable clamping.
+        up: int = 1,
+        down: int = 1,
+        gain_out: float = np.sqrt(0.5),
         fix_residual: bool = False,
-        **layer_kwargs,  # Arguments for conv layer.
-    ):
+        **kwargs,  # Arguments for conv layer.
+    ) -> None:
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.down = down
-        self.conv0 = Conv2d(in_channels, out_channels, down=down, conv_clamp=conv_clamp, **layer_kwargs)
-
-        self.conv1 = Conv2d(out_channels, out_channels, up=up, conv_clamp=conv_clamp, gain=gain_out, **layer_kwargs)
-
+        self.conv0 = Conv2d(in_channels, out_channels, down=down, conv_clamp=conv_clamp, **kwargs)
+        self.conv1 = Conv2d(out_channels, out_channels, up=up, conv_clamp=conv_clamp, gain=gain_out, **kwargs)
         self.skip = Conv2d(
             in_channels,
             out_channels,
@@ -184,12 +182,12 @@ class ResidualBlock(torch.nn.Module):
         )
         self.gain_out = gain_out
 
-    def forward(self, x, w=None, s=None, **layer_kwargs):
+    def forward(self, x: torch.Tensor, w: Optional[torch.Tensor] = None, s=None, **kwargs) -> torch.Tensor:
         y = self.skip(x)
         s_ = next(s) if s is not None else None
-        x = self.conv0(x, w, s=s_, **layer_kwargs)
+        x = self.conv0(x, w, s=s_, **kwargs)
         s_ = next(s) if s is not None else None
-        x = self.conv1(x, w, s=s_, **layer_kwargs)
+        x = self.conv1(x, w, s=s_, **kwargs)
         x = y + x
         return x
 
