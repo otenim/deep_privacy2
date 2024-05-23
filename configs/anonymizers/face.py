@@ -1,8 +1,9 @@
-from dp2.anonymizer import Anonymizer
-from dp2.detection.face_detector import FaceDetector
-from ..defaults import common
 from tops.config import LazyCall as L
 
+from dp2.anonymizer import Anonymizer
+from dp2.detection.face_detector import FaceDetector
+
+from ..defaults import common
 
 detector = L(FaceDetector)(
     face_detector_cfg=dict(name="DSFDDetector", clip_boxes=True),

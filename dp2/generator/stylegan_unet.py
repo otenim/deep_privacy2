@@ -163,8 +163,8 @@ class StyleGANUnet(BaseStyleGAN):
 
     def forward(
         self,
-        condition,
-        mask,
+        condition: torch.Tensor,
+        mask: torch.Tensor,
         z=None,
         embedding=None,
         w=None,

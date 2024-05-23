@@ -1,6 +1,6 @@
 import tops
 import tqdm
-from tops import logger, highlight_py_str
+from tops import highlight_py_str, logger
 from tops.config import LazyConfig
 
 

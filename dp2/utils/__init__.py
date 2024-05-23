@@ -26,11 +26,7 @@ def load_config(config_path: Union[str, Path]) -> DictConfig:
         config_path = pathlib.Path(config_path)
     assert config_path.is_file()
     cfg = LazyConfig.load(str(config_path))
-    cfg.output_dir = pathlib.Path(
-        str(config_path)
-        .replace("configs", str(cfg.common.output_dir))
-        .replace(".py", "")
-    )
+    cfg.output_dir = pathlib.Path(str(config_path).replace("configs", str(cfg.common.output_dir)).replace(".py", ""))
     if cfg.common.experiment_name is None:
         cfg.experiment_name = str(config_path)
     else:

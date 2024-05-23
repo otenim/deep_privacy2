@@ -1,5 +1,6 @@
-from dp2.generator.stylegan_unet import StyleGANUnet
 from tops.config import LazyCall as L
+
+from dp2.generator.stylegan_unet import StyleGANUnet
 
 generator = L(StyleGANUnet)(
     imsize="${data.imsize}",

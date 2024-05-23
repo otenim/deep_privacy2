@@ -1,4 +1,5 @@
-from typing import Optional
+from abc import ABCMeta, abstractmethod
+from typing import Any, Optional
 
 import numpy as np
 import tops
@@ -9,7 +10,7 @@ from ..layers import Module
 from ..layers.sg2_layers import FullyConnectedLayer
 
 
-class BaseGenerator(Module):
+class BaseGenerator(Module, metaclass=ABCMeta):
     def __init__(self, z_channels: int):
         super().__init__()
         self.z_channels = z_channels
@@ -22,8 +23,8 @@ class BaseGenerator(Module):
         z: Optional[torch.Tensor] = None,
         truncation_value: Optional[float] = None,
         batch_size: Optional[int] = None,
-        dtype=None,
-        device=None,
+        dtype: Optional[torch.dtype] = None,
+        device: Optional[torch.device] = None,
     ) -> torch.Tensor:
         """Generates a latent variable for generator."""
         if z is not None:
@@ -43,6 +44,10 @@ class BaseGenerator(Module):
             m = z.abs() > truncation_value
             z[m] = torch.rand_like(z)[m]
         return z
+
+    @abstractmethod
+    def forward(self, *args, **kwargs) -> Any:
+        pass
 
     def sample(self, truncation_value: float, z: Optional[torch.Tensor] = None, **kwargs):
         """

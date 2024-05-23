@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Dict, Optional, Type, Union
+from typing import Dict, Optional, Type, Union
 
 import numpy as np
 import tops
@@ -74,7 +74,7 @@ class Anonymizer:
 
     def forward_G(
         self,
-        G,
+        G: BaseGenerator,
         batch,
         multi_modal_truncation: bool,
         amp: bool,
@@ -136,7 +136,7 @@ class Anonymizer:
         G = self.generators[type(detection)]
         if G is None:
             return im
-        C, H, W = im.shape
+        _, H, W = im.shape
         if update_identity is None:
             update_identity = [True for i in range(len(detection))]
         for idx in range(len(detection)):
