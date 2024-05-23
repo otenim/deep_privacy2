@@ -1,12 +1,14 @@
-import pickle
-import torch
 import lzma
+import pickle
+from abc import ABCMeta, abstractmethod
 from pathlib import Path
+from typing import Any, Union
+
+import torch
 from tops import logger
 
 
-class BaseDetector:
-
+class BaseDetector(metaclass=ABCMeta):
     def __init__(self, cache_directory: str) -> None:
         if cache_directory is not None:
             self.cache_directory = Path(cache_directory, str(self.__class__.__name__))
@@ -27,14 +29,18 @@ class BaseDetector:
             state_dict = torch.load(fp)
         return [state["cls"].from_state_dict(state_dict=state) for state in state_dict]
 
-    def forward_and_cache(self, im: torch.Tensor, cache_id: str, load_cache: bool):
+    @abstractmethod
+    def forward(self, *args, **kwargs) -> Any:
+        pass
+
+    def forward_and_cache(self, im: torch.Tensor, cache_id: Union[str, None], load_cache: bool):
         if cache_id is None:
             return self.forward(im)
         cache_path = self.cache_directory.joinpath(cache_id + ".torch")
         if cache_path.is_file() and load_cache:
             try:
                 return self.load_from_cache(cache_path)
-            except Exception as e:
+            except Exception:
                 logger.warn(f"The cache file was corrupted: {cache_path}")
                 exit()
         detections = self.forward(im)

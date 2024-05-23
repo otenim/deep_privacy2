@@ -15,6 +15,7 @@ from dp2.detection.structures import (
     PersonDetection,
     VehicleDetection,
 )
+from dp2.generator.base import BaseGenerator
 from dp2.infer import build_trained_generator
 from dp2.utils import load_config
 from stylemc import get_and_cache_direction, get_stylesW, init_affine_modules
@@ -31,15 +32,10 @@ class Anonymizer:
         car_G_cfg: Optional[Union[str, Path]] = None,
     ) -> None:
         self.detector = detector
-        self.generators = {
-            k: None
-            for k in [
-                CSEPersonDetection,
-                PersonDetection,
-                FaceDetection,
-                VehicleDetection,
-            ]
-        }
+        self.generators: Dict[
+            Union[Type[CSEPersonDetection], Type[PersonDetection], Type[FaceDetection], Type[VehicleDetection]],
+            BaseGenerator,
+        ] = {}
         self.load_cache = load_cache
         self.generator_cfgs: Dict[
             Union[
@@ -50,6 +46,7 @@ class Anonymizer:
             ],
             DictConfig,
         ] = {}
+
         if cse_person_G_cfg is not None:
             self.generator_cfgs[CSEPersonDetection] = load_config(cse_person_G_cfg)
             self.generators[CSEPersonDetection] = build_trained_generator(self.generator_cfgs[CSEPersonDetection])
@@ -68,11 +65,11 @@ class Anonymizer:
             tops.logger.log(f"Loaded generator from: {face_G_cfg}")
         self.dl = None
 
-    def initialize_tracker(self, fps: float):
+    def initialize_tracker(self, fps: float) -> None:
         self.tracker = MultiObjectTracker(dt=1 / fps)
         self.track_to_z_idx = dict()
 
-    def reset_tracker(self):
+    def reset_tracker(self) -> None:
         self.track_to_z_idx = dict()
 
     def forward_G(

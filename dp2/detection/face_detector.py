@@ -1,11 +1,14 @@
-import torch
 import lzma
-import tops
 from pathlib import Path
-from dp2.detection.base import BaseDetector
+
+import tops
+import torch
 from face_detection import build_detector as build_face_detector
-from .structures import FaceDetection
 from tops import logger
+
+from dp2.detection.base import BaseDetector
+
+from .structures import FaceDetection
 
 
 def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
@@ -22,7 +25,6 @@ def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
 
 
 class FaceDetector(BaseDetector):
-
     def __init__(self, face_detector_cfg: dict, score_threshold: float, face_post_process_cfg: dict, **kwargs) -> None:
         super().__init__(**kwargs)
         self.face_detector = build_face_detector(**face_detector_cfg, confidence_threshold=score_threshold)
