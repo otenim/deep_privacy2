@@ -1,12 +1,15 @@
-import torch
 import lzma
-from dp2.detection.base import BaseDetector
-from .utils import combine_cse_maskrcnn_dets
-from .models.cse import CSEDetector
-from .models.mask_rcnn import MaskRCNNDetector
-from .models.keypoint_maskrcnn import KeypointMaskRCNN
-from .structures import CSEPersonDetection, PersonDetection
 from pathlib import Path
+
+import torch
+
+from dp2.detection.base import BaseDetector
+
+from .models.cse import CSEDetector
+from .models.keypoint_maskrcnn import KeypointMaskRCNN
+from .models.mask_rcnn import MaskRCNNDetector
+from .structures import CSEPersonDetection, PersonDetection
+from .utils import combine_cse_maskrcnn_dets
 
 
 class CSEPersonDetector(BaseDetector):
@@ -43,7 +46,7 @@ class CSEPersonDetector(BaseDetector):
             cse_dets=cse_dets,
             embed_map=self.cse_detector.embed_map,
             orig_imshape_CHW=im.shape,
-            **self.post_process_cfg
+            **self.post_process_cfg,
         )
         return [det]
 

@@ -1,17 +1,18 @@
-import torch
 import numpy as np
-from dp2 import utils
-from dp2.utils import vis_utils, crop_box
-from .utils import cut_pad_resize, masks_to_boxes, get_kernel, transform_embedding, initialize_cse_boxes
-from .box_utils import get_expanded_bbox, include_box
-import torchvision
 import tops
-from .box_utils_fdf import expand_bbox as expand_bbox_fdf
+import torch
+import torchvision
+
+from dp2 import utils
 from dp2.data.transforms.transforms import InsertJointMap
+from dp2.utils import crop_box, vis_utils
+
+from .box_utils import get_expanded_bbox, include_box
+from .box_utils_fdf import expand_bbox as expand_bbox_fdf
+from .utils import cut_pad_resize, get_kernel, initialize_cse_boxes, masks_to_boxes, transform_embedding
 
 
 class VehicleDetection:
-
     def __init__(self, segmentation: torch.BoolTensor) -> None:
         self.segmentation = segmentation
         self.boxes = masks_to_boxes(segmentation)
@@ -56,11 +57,9 @@ class VehicleDetection:
 
 
 class FaceDetection:
-
     def __init__(
         self, boxes_ltrb: torch.LongTensor, target_imsize, fdf128_expand: bool, keypoints: torch.Tensor = None, **kwargs
     ) -> None:
-
         self.boxes = boxes_ltrb.cpu()
         assert self.boxes.shape[1] == 4, self.boxes.shape
         self.target_imsize = tuple(target_imsize)
@@ -135,7 +134,7 @@ class FaceDetection:
         return FaceDetection(
             state_dict["boxes"].cpu(),
             keypoints=state_dict["orig_keypoints"] if "orig_keypoints" in state_dict else None,
-            **kwargs
+            **kwargs,
         )
 
     def state_dict(self, **kwargs):
@@ -166,7 +165,6 @@ def remove_dilate_in_pad(mask: torch.Tensor, exp_box, orig_imshape):
 
 
 class CSEPersonDetection:
-
     def __init__(
         self,
         segmentation,
@@ -208,7 +206,7 @@ class CSEPersonDetection:
                 self.orig_imshape_CHW[1:],
                 self.segmentation[i],
                 **self.exp_bbox_cfg,
-                target_aspect_ratio=self.target_imsize[0] / self.target_imsize[1]
+                target_aspect_ratio=self.target_imsize[0] / self.target_imsize[1],
             )
             if not include_box(exp_box, imshape=self.orig_imshape_CHW[1:], **self.exp_bbox_filter):
                 continue
@@ -325,7 +323,7 @@ class CSEPersonDetection:
                 cse_dets=None,
                 embed_map=embed_map,
                 orig_imshape_CHW=state_dict["orig_imshape_CHW"],
-                **post_process_cfg
+                **post_process_cfg,
             )
             detection.vertices = tops.to_cuda(state_dict["vertices"].long())
             numel = np.prod(detection.vertices.shape)
@@ -359,7 +357,7 @@ class CSEPersonDetection:
             cse_dets,
             embed_map=embed_map,
             orig_imshape_CHW=state_dict["orig_imshape_CHW"],
-            **post_process_cfg
+            **post_process_cfg,
         )
 
     def visualize(self, im):
@@ -395,7 +393,6 @@ def shift_and_preprocess_keypoints(keypoints: torch.Tensor, boxes):
 
 
 class PersonDetection:
-
     def __init__(
         self,
         segmentation,
@@ -407,7 +404,7 @@ class PersonDetection:
         kp_vis_thr=None,
         keypoints=None,
         insert_joint_map=False,
-        **kwargs
+        **kwargs,
     ) -> None:
         self.segmentation = segmentation
         self.target_imsize = list(target_imsize)
@@ -436,7 +433,7 @@ class PersonDetection:
                 self.orig_imshape_CHW[1:],
                 self.segmentation[i],
                 **self.exp_bbox_cfg,
-                target_aspect_ratio=self.target_imsize[0] / self.target_imsize[1]
+                target_aspect_ratio=self.target_imsize[0] / self.target_imsize[1],
             )
             if not include_box(exp_box, imshape=self.orig_imshape_CHW[1:], **self.exp_bbox_filter):
                 continue
@@ -506,7 +503,7 @@ class PersonDetection:
             state_dict["segmentation"],
             orig_imshape_CHW=state_dict["orig_imshape_CHW"],
             **post_process_cfg,
-            keypoints=state_dict["keypoints"]
+            keypoints=state_dict["keypoints"],
         )
 
     def visualize(self, im):

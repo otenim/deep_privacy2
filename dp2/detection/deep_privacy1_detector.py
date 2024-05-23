@@ -1,12 +1,14 @@
-import torch
-import tops
 import lzma
-from torchvision.models.detection import keypointrcnn_resnet50_fpn, KeypointRCNN_ResNet50_FPN_Weights
-from .base import BaseDetector
-from face_detection import build_detector as build_face_detector
-from .structures import FaceDetection
-from tops import logger
 from pathlib import Path
+
+import tops
+import torch
+from face_detection import build_detector as build_face_detector
+from tops import logger
+from torchvision.models.detection import KeypointRCNN_ResNet50_FPN_Weights, keypointrcnn_resnet50_fpn
+
+from .base import BaseDetector
+from .structures import FaceDetection
 
 
 def is_keypoint_within_bbox(x0, y0, x1, y1, keypoint):
@@ -44,7 +46,6 @@ def match_bbox_keypoint(bounding_boxes, keypoints):
 
 
 class DeepPrivacy1Detector(BaseDetector):
-
     def __init__(
         self, keypoint_threshold: float, face_detector_cfg, score_threshold: float, face_post_process_cfg, **kwargs
     ):

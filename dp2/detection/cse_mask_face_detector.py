@@ -1,14 +1,17 @@
-import torch
 import lzma
-import tops
 from pathlib import Path
-from dp2.detection.base import BaseDetector
-from .utils import combine_cse_maskrcnn_dets
+
+import tops
+import torch
 from face_detection import build_detector as build_face_detector
+from tops import logger
+
+from dp2.detection.base import BaseDetector
+
 from .models.cse import CSEDetector
 from .models.mask_rcnn import MaskRCNNDetector
-from .structures import CSEPersonDetection, VehicleDetection, FaceDetection, PersonDetection
-from tops import logger
+from .structures import CSEPersonDetection, FaceDetection, PersonDetection, VehicleDetection
+from .utils import combine_cse_maskrcnn_dets
 
 
 def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
@@ -25,7 +28,6 @@ def box1_inside_box2(box1: torch.Tensor, box2: torch.Tensor):
 
 
 class CSeMaskFaceDetector(BaseDetector):
-
     def __init__(
         self,
         mask_rcnn_cfg,

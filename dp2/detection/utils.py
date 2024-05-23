@@ -1,10 +1,11 @@
+from functools import lru_cache
+
 import cv2
 import numpy as np
-import torch
 import tops
+import torch
 from skimage.morphology import disk
-from torchvision.transforms.functional import resize, InterpolationMode
-from functools import lru_cache
+from torchvision.transforms.functional import InterpolationMode, resize
 
 
 @lru_cache(maxsize=200)

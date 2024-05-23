@@ -72,7 +72,6 @@ def expand_bounding_box(bbox, percentage, imshape):
     # Expand height
 
     if expanding_factor > 0:
-
         y0 = y0 - expanding_factor
         y0 = max(0, y0)
 
