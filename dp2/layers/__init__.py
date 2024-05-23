@@ -13,9 +13,9 @@ class Sequential(nn.Sequential):
 
 
 class Module(nn.Module):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__()
 
-    def extra_repr(self):
+    def extra_repr(self) -> str:
         num_params = tops.num_parameters(self) / 10**6
         return f"Num params: {num_params:.3f}M"
